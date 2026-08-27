@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-display: "IBM Plex Sans", "Segoe UI", sans-serif;
+
+  --color-navy-950: #07141d;
+  --color-navy-900: #0a1f2e;
+  --color-navy-800: #123044;
+  --color-navy-700: #1a4259;
+  --color-navy-100: #d7e4ec;
+
+  --color-teal-700: #0b5c67;
+  --color-teal-600: #0e7480;
+  --color-teal-500: #14808c;
+  --color-teal-50: #e8f4f5;
+
+  --color-brass-500: #c4a35a;
+  --color-brass-400: #d4b56e;
+  --color-brass-50: #f8f1e0;
+
+  --color-steel-900: #1c242b;
+  --color-steel-700: #3d4a55;
+  --color-steel-500: #6b7780;
+  --color-steel-300: #c5ced0;
+  --color-steel-200: #d9e0e5;
+  --color-steel-100: #eef1f4;
+  --color-steel-50: #f5f7f9;
+
+  --color-success-700: #1f6b4a;
+  --color-success-50: #e7f5ee;
+  --color-danger-700: #8f2434;
+  --color-danger-50: #f8e8eb;
+  --color-warning-700: #8a5a12;
+  --color-warning-50: #f8efd9;
+}
+
+:root {
+  --sidebar-width: 16.5rem;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-steel-50);
+  color: var(--color-steel-900);
+  font-family: var(--font-sans);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-navy-700) transparent;
+}

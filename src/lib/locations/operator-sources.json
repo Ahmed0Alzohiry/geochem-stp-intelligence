@@ -1,0 +1,31 @@
+{
+  "high": {
+    "luberef.com": {
+      "source_url": "https://www.luberef.com/",
+      "source_name": "Luberef (Saudi Aramco Base Oil Company)",
+      "evidence_type": "official_operator_website"
+    },
+    "petrorabigh.com": {
+      "source_url": "https://www.petrorabigh.com/",
+      "source_name": "Petro Rabigh",
+      "evidence_type": "official_operator_website"
+    },
+    "samref.com.sa": {
+      "source_url": "https://www.samref.com.sa/",
+      "source_name": "SAMREF",
+      "evidence_type": "official_operator_website"
+    },
+    "yasref.com": {
+      "source_url": "https://www.yasref.com/",
+      "source_name": "YASREF",
+      "evidence_type": "official_contact_page"
+    }
+  },
+  "medium": {
+    "sabic.com": {
+      "source_url": "https://www.sabic.com/",
+      "source_name": "SABIC (Yanpet affiliate domain)",
+      "evidence_type": "official_affiliate_website"
+    }
+  }
+}
