@@ -21,3 +21,9 @@ export {
   uniquenessModel,
 } from "./persistence-readiness";
 export { mapScoredAccountToStpRow, validateStpPayload } from "./stp-persist-row";
+export {
+  ENV_WAVE1_EXPECTED_COUNT,
+  PCH_EXPECTED_CURRENT_COUNT,
+  ENV_SERVICE_ID,
+  PCH_SERVICE_ID,
+} from "./env-wave1-manifest";

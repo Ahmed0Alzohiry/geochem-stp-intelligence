@@ -138,7 +138,7 @@ export function validateStpPayload(
 
     if (!UUID_RE.test(row.company_id)) fail("company_id", "not a UUID");
     if (!UUID_RE.test(row.service_id)) fail("service_id", "not a UUID");
-    if (row.service_id !== expectedServiceId) fail("service_id", "does not match resolved PCH service_id");
+    if (row.service_id !== expectedServiceId) fail("service_id", "does not match expected service_id");
     if (!ELIGIBILITY.has(row.eligibility)) fail("eligibility", `invalid ${row.eligibility}`);
     if (row.tier != null && !TIERS.has(row.tier)) fail("tier", `invalid ${row.tier}`);
     if (!CONFIDENCE.has(row.data_confidence_band)) fail("data_confidence_band", `invalid ${row.data_confidence_band}`);

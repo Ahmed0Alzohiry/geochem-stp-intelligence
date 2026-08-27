@@ -44,10 +44,17 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
   if (!registry.ok) failures.push(...registry.errors);
 
   if (serviceReadiness("PCH") !== "CONFIGURED") failures.push("PCH must be CONFIGURED");
+  if (serviceReadiness("ENV") !== "NOT_CONFIGURED") failures.push("ENV must stay NOT_CONFIGURED until 24 Wave-1 rows persist");
+  if (serviceReadiness("ENV", 24) !== "CONFIGURED") failures.push("ENV must be CONFIGURED when persisted count is 24");
+  if (serviceReadiness("ENV", 23) !== "NOT_CONFIGURED") failures.push("ENV must not be CONFIGURED at count 23");
+  if (serviceReadiness("PET", 100) !== "NOT_CONFIGURED") failures.push("PET must stay NOT_CONFIGURED even with rows");
   for (const code of CANONICAL_SERVICE_CODES) {
-    if (code === "PCH") continue;
+    if (code === "PCH" || code === "ENV") continue;
     if (serviceReadiness(code) !== "NOT_CONFIGURED") failures.push(`${code} must stay NOT_CONFIGURED until validated`);
     if (getCanonicalServiceDefinition(code).persistenceApproved) failures.push(`${code} persistence must not be approved`);
+  }
+  if (getCanonicalServiceDefinition("ENV").persistenceApproved) {
+    failures.push("ENV must not be statically persistence-approved");
   }
 
   const pch = scoreServiceAccount(base("PCH"));

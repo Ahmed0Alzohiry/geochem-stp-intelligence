@@ -3,7 +3,8 @@
  */
 import { loadEnvLocal } from "./build-pch-persist-payload";
 import { runFast2EngineSelfTest } from "./run-fast-2-self-test";
-import { CANONICAL_SERVICE_CODES, registerLiveServices, serviceReadiness, validateServiceRegistry } from "./service-registry";
+import { CANONICAL_SERVICE_CODES, isServiceCode, registerLiveServices, serviceReadiness, validateServiceRegistry } from "./service-registry";
+import type { ServiceCode } from "./types";
 import { createSupabaseBrowserClient } from "../supabase/client";
 import { getServices } from "../supabase/master-data";
 import { getStpCurrentForService } from "../supabase/stp-current";
@@ -23,7 +24,15 @@ async function main() {
   const unit = runFast2EngineSelfTest();
   const supabase = createSupabaseBrowserClient();
   const services = await getServices();
-  const registered = registerLiveServices(services);
+  const persistedCurrentByCode: Partial<Record<ServiceCode, number>> = {};
+  for (const row of services.filter((item) => item.active)) {
+    const code = (row.service_code ?? "").toUpperCase();
+    const current = await countEq("company_service_stp_current", "service_id", row.id);
+    if (isServiceCode(code)) {
+      persistedCurrentByCode[code] = current.count ?? 0;
+    }
+  }
+  const registered = registerLiveServices(services, persistedCurrentByCode);
   const catalogCheck = validateServiceRegistry(services);
 
   const companies = await supabase.from("companies").select("id", { count: "exact", head: true });
@@ -85,8 +94,11 @@ async function main() {
     opportunitiesZero: (opportunities.count ?? 0) === 0,
     noDemoOpportunities: (demoOpps.count ?? 0) === 0,
     otherServicesNoPersist: perService
-      .filter((row) => row.service !== "PCH")
+      .filter((row) => row.service !== "PCH" && row.service !== "ENV")
       .every((row) => row.currentStp === 0 && row.scoreRows === 0),
+    envNotPersistedOrWave1: perService
+      .filter((row) => row.service === "ENV")
+      .every((row) => row.currentStp === 0 || row.currentStp === 24),
   };
 
   const pass = Object.values(checks).every(Boolean);

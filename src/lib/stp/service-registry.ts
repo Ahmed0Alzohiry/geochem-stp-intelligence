@@ -1,13 +1,15 @@
 /**
  * Canonical GEOCHEM service registry for STP, targeting, dashboard, and personas.
  * Live catalog rows come from public.services. Do not invent services.
- * PCH is the only persistence-approved / persona-approved reference.
+ * PCH remains persistence-approved. ENV is CONFIGURED only when Wave-1
+ * persisted current count equals 24. Other services stay NOT_CONFIGURED.
  */
 import type { ServiceCode } from "./types";
 import { SERVICE_ELIGIBLE_INDUSTRIES } from "./eligibility";
 import { SERVICE_PLAYBOOK } from "./positioning";
 import { COMMERCIAL_WEIGHTS, TIER_THRESHOLDS, KNOWN_WEIGHT_FLOOR } from "./weights";
 import { personasForService } from "../contacts/service-persona-map";
+import { ENV_WAVE1_EXPECTED_COUNT } from "./env-wave1-manifest";
 
 export const DEFAULT_SERVICE_CODE: ServiceCode = "PCH";
 
@@ -28,7 +30,7 @@ export type CanonicalServiceDefinition = {
   serviceCode: ServiceCode;
   /** 6.4.0 engine has eligibility + industry tables for this code. Not a persist approval. */
   scoringModelPresent: boolean;
-  /** Only PCH has an independently validated, persisted ranking. */
+  /** Static writer approval. PCH only. ENV readiness uses persisted Wave-1 count. */
   persistenceApproved: boolean;
   personasApproved: boolean;
   eligibleIndustries: string[];
@@ -53,7 +55,9 @@ export function getCanonicalServiceDefinition(code: ServiceCode): CanonicalServi
     serviceCode: code,
     scoringModelPresent: Boolean(SERVICE_ELIGIBLE_INDUSTRIES[code]),
     persistenceApproved,
-    personasApproved: code === "PCH" && personasForService("PCH").length > 0,
+    personasApproved:
+      (code === "PCH" && personasForService("PCH").length > 0) ||
+      (code === "ENV" && personasForService("ENV").length > 0),
     eligibleIndustries: [...SERVICE_ELIGIBLE_INDUSTRIES[code]].sort(),
     positioning: SERVICE_PLAYBOOK[code].positioning,
     commercialWeights: COMMERCIAL_WEIGHTS,
@@ -62,13 +66,16 @@ export function getCanonicalServiceDefinition(code: ServiceCode): CanonicalServi
   };
 }
 
-export function serviceReadiness(code: ServiceCode): ServiceReadiness {
-  const def = getCanonicalServiceDefinition(code);
-  return def.persistenceApproved ? "CONFIGURED" : "NOT_CONFIGURED";
+export function serviceReadiness(code: ServiceCode, persistedCurrentCount = 0): ServiceReadiness {
+  if (code === "PCH") return "CONFIGURED";
+  if (code === "ENV") {
+    return persistedCurrentCount === ENV_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
+  }
+  return "NOT_CONFIGURED";
 }
 
 export function rankingAvailable(code: ServiceCode, persistedCurrentCount: number): boolean {
-  return serviceReadiness(code) === "CONFIGURED" && persistedCurrentCount > 0;
+  return serviceReadiness(code, persistedCurrentCount) === "CONFIGURED" && persistedCurrentCount > 0;
 }
 
 export type LiveCatalogService = {
@@ -87,7 +94,10 @@ export type RegisteredService = LiveCatalogService & {
   personaCount: number;
 };
 
-export function registerLiveServices(rows: LiveCatalogService[]): RegisteredService[] {
+export function registerLiveServices(
+  rows: LiveCatalogService[],
+  persistedCurrentByCode: Partial<Record<ServiceCode, number>> = {},
+): RegisteredService[] {
   return rows
     .filter((row) => row.active)
     .map((row) => {
@@ -104,11 +114,12 @@ export function registerLiveServices(rows: LiveCatalogService[]): RegisteredServ
         };
       }
       const def = getCanonicalServiceDefinition(code);
+      const persisted = persistedCurrentByCode[code] ?? 0;
       return {
         ...row,
         serviceCode: code,
-        readiness: serviceReadiness(code),
-        persistenceApproved: def.persistenceApproved,
+        readiness: serviceReadiness(code, persisted),
+        persistenceApproved: def.persistenceApproved || (code === "ENV" && persisted === ENV_WAVE1_EXPECTED_COUNT),
         personasApproved: def.personasApproved,
         scoringModelPresent: def.scoringModelPresent,
         personaCount: personasForService(code).length,
@@ -132,9 +143,13 @@ export function validateServiceRegistry(rows: LiveCatalogService[]): { ok: boole
     if (!def.scoringModelPresent) errors.push(`${code} missing scoring model tables.`);
   }
   if (!getCanonicalServiceDefinition("PCH").persistenceApproved) errors.push("PCH must remain persistence-approved.");
+  if (getCanonicalServiceDefinition("ENV").persistenceApproved) {
+    errors.push("ENV must not be statically persistence-approved; CONFIGURED requires 24 persisted Wave-1 rows.");
+  }
   if (personasForService("PCH").length !== 8) errors.push("PCH must keep 8 personas.");
+  if (personasForService("ENV").length !== 8) errors.push("ENV must keep 8 Wave-1 personas.");
   for (const code of CANONICAL_SERVICE_CODES) {
-    if (code === "PCH") continue;
+    if (code === "PCH" || code === "ENV") continue;
     if (personasForService(code).length > 0) errors.push(`${code} personas were invented; keep empty until approved.`);
     if (getCanonicalServiceDefinition(code).persistenceApproved) {
       errors.push(`${code} must not be persistence-approved until independently validated.`);

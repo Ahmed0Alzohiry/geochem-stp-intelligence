@@ -45,20 +45,21 @@ export type ServiceContactPersona = {
 };
 
 function persona(
+  serviceCode: ServiceCode,
   partial: Omit<ServiceContactPersona, "serviceCode" | "jobFunctionName"> & { jobFunctionCode: JobFunctionCode },
 ): ServiceContactPersona {
   const job = JOB_FUNCTION_CATALOG.find((item) => item.functionCode === partial.jobFunctionCode);
   if (!job) throw new Error(`Unknown job function ${partial.jobFunctionCode}`);
   return {
     ...partial,
-    serviceCode: "PCH",
+    serviceCode,
     jobFunctionName: job.name,
   };
 }
 
 /** PCH reference personas. Not people. Not contact rows. */
 export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
-  persona({
+  persona("PCH", {
     departmentName: "Laboratory",
     jobFunctionCode: "laboratory",
     buyingRole: "TECHNICAL",
@@ -66,7 +67,7 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
     relevanceScore: 100,
     relevanceReason: "PCH work is process chemistry and product-quality laboratory support; lab owners specify and receive results.",
   }),
-  persona({
+  persona("PCH", {
     departmentName: "QA/QC",
     jobFunctionCode: "quality",
     buyingRole: "TECHNICAL",
@@ -74,7 +75,7 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
     relevanceScore: 95,
     relevanceReason: "Product-quality and specification control is a primary PCH buying and user function.",
   }),
-  persona({
+  persona("PCH", {
     departmentName: "Engineering",
     jobFunctionCode: "technical_services",
     buyingRole: "TECHNICAL",
@@ -82,7 +83,7 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
     relevanceScore: 85,
     relevanceReason: "Process/technical services influence assay, stream, and troubleshooting lab work.",
   }),
-  persona({
+  persona("PCH", {
     departmentName: "Inspection",
     jobFunctionCode: "inspection",
     buyingRole: "TECHNICAL",
@@ -90,7 +91,7 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
     relevanceScore: 80,
     relevanceReason: "Inspection programs generate sampling and third-party testing demand adjacent to PCH.",
   }),
-  persona({
+  persona("PCH", {
     departmentName: "Procurement",
     jobFunctionCode: "procurement",
     buyingRole: "PROCUREMENT",
@@ -98,7 +99,7 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
     relevanceScore: 90,
     relevanceReason: "Vendor selection and PO ownership for contracted laboratory services.",
   }),
-  persona({
+  persona("PCH", {
     departmentName: "Procurement",
     jobFunctionCode: "contracts",
     buyingRole: "PROCUREMENT",
@@ -106,7 +107,7 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
     relevanceScore: 78,
     relevanceReason: "Frame agreements and lab-service contracts sit with procurement/contracts counterparts.",
   }),
-  persona({
+  persona("PCH", {
     departmentName: "Engineering",
     jobFunctionCode: "operations",
     buyingRole: "USER",
@@ -114,7 +115,7 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
     relevanceScore: 72,
     relevanceReason: "Operations consumes lab data; no separate Operations department in the current catalog, so Engineering is the host department.",
   }),
-  persona({
+  persona("PCH", {
     departmentName: "Procurement",
     jobFunctionCode: "commercial",
     buyingRole: "GATEKEEPER",
@@ -124,11 +125,79 @@ export const PCH_CONTACT_PERSONAS: ServiceContactPersona[] = [
   }),
 ];
 
+/** ENV Wave-1 personas. Not people. Not contact rows. No Sustainability department in the seeded catalog. */
+export const ENV_CONTACT_PERSONAS: ServiceContactPersona[] = [
+  persona("ENV", {
+    departmentName: "Environment",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 100,
+    relevanceReason: "Environmental managers specify soil, water, wastewater, and compliance testing for GEOCHEM ENV.",
+  }),
+  persona("ENV", {
+    departmentName: "HSE",
+    jobFunctionCode: "operations",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 95,
+    relevanceReason: "HSE/EHS owns compliance monitoring programs that generate ENV laboratory demand.",
+  }),
+  persona("ENV", {
+    departmentName: "Laboratory",
+    jobFunctionCode: "laboratory",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 90,
+    relevanceReason: "Site or contractor laboratories receive and specify environmental test work.",
+  }),
+  persona("ENV", {
+    departmentName: "QA/QC",
+    jobFunctionCode: "quality",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 82,
+    relevanceReason: "Quality functions often own sampling integrity and environmental QA data.",
+  }),
+  persona("ENV", {
+    departmentName: "Engineering",
+    jobFunctionCode: "operations",
+    buyingRole: "USER",
+    priority: 2,
+    relevanceScore: 78,
+    relevanceReason: "Operations/process owners consume ENV results; Engineering hosts operations in the current catalog.",
+  }),
+  persona("ENV", {
+    departmentName: "Procurement",
+    jobFunctionCode: "procurement",
+    buyingRole: "PROCUREMENT",
+    priority: 1,
+    relevanceScore: 88,
+    relevanceReason: "Vendor selection and PO ownership for contracted environmental laboratory services.",
+  }),
+  persona("ENV", {
+    departmentName: "Procurement",
+    jobFunctionCode: "contracts",
+    buyingRole: "PROCUREMENT",
+    priority: 2,
+    relevanceScore: 76,
+    relevanceReason: "Frame agreements for environmental testing sit with procurement/contracts counterparts.",
+  }),
+  persona("ENV", {
+    departmentName: "Environment",
+    jobFunctionCode: "commercial",
+    buyingRole: "GATEKEEPER",
+    priority: 3,
+    relevanceScore: 70,
+    relevanceReason: "Vendor-management gatekeeping for approved environmental laboratories. No Sustainability department in the catalog.",
+  }),
+];
+
 export const SERVICE_CONTACT_PERSONAS: Record<ServiceCode, ServiceContactPersona[]> = {
   PCH: PCH_CONTACT_PERSONAS,
   PET: [],
   MIN: [],
-  ENV: [],
+  ENV: ENV_CONTACT_PERSONAS,
   OCM: [],
   MCT: [],
   INS: [],
@@ -161,5 +230,29 @@ export function validateServicePersonaMap(): { ok: boolean; errors: string[] } {
   if (!hasLab) errors.push("PCH missing priority-1 laboratory persona.");
   if (!hasQuality) errors.push("PCH missing priority-1 quality persona.");
   if (!hasProc) errors.push("PCH missing procurement persona.");
+  if (pch.some((row) => row.serviceCode !== "PCH")) errors.push("PCH personas must keep serviceCode PCH.");
+
+  const env = SERVICE_CONTACT_PERSONAS.ENV;
+  if (env.length !== 8) errors.push("ENV must keep 8 Wave-1 personas.");
+  const envKeys = new Set<string>();
+  for (const row of env) {
+    if (row.serviceCode !== "ENV") errors.push("ENV persona has the wrong serviceCode.");
+    if (!depts.has(row.departmentName)) errors.push(`ENV department not in seeded catalog: ${row.departmentName}`);
+    if (!codes.has(row.jobFunctionCode)) errors.push(`ENV unknown job function: ${row.jobFunctionCode}`);
+    const key = `${row.departmentName}::${row.jobFunctionCode}`;
+    if (envKeys.has(key)) errors.push(`ENV duplicate persona ${key}`);
+    envKeys.add(key);
+  }
+  if (!env.some((row) => row.departmentName === "Environment" && row.priority === 1)) {
+    errors.push("ENV missing priority-1 Environment persona.");
+  }
+  if (!env.some((row) => row.departmentName === "HSE" && row.priority === 1)) {
+    errors.push("ENV missing priority-1 HSE persona.");
+  }
+  if (!env.some((row) => row.jobFunctionCode === "laboratory")) errors.push("ENV missing laboratory persona.");
+  if (!env.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
+    errors.push("ENV missing procurement persona.");
+  }
+
   return { ok: errors.length === 0, errors };
 }

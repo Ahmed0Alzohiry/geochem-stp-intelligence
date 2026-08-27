@@ -4,7 +4,8 @@
  */
 import { createSupabaseBrowserClient } from "./client";
 import { getServices, type ServiceRecord } from "./master-data";
-import { registerLiveServices, serviceReadiness, type RegisteredService } from "../stp/service-registry";
+import { isServiceCode, registerLiveServices, serviceReadiness, type RegisteredService } from "../stp/service-registry";
+import type { ServiceCode } from "../stp/types";
 
 export const DEFAULT_STP_SERVICE_CODE = "PCH";
 export const STP_PAGE_SIZE = 50;
@@ -166,6 +167,16 @@ async function countTier(serviceId: string, tier: string): Promise<number> {
   return count ?? 0;
 }
 
+async function countCurrentForServiceId(serviceId: string): Promise<number> {
+  const supabase = createSupabaseBrowserClient();
+  const { count, error } = await supabase
+    .from("company_service_stp_current")
+    .select("id", { count: "exact", head: true })
+    .eq("service_id", serviceId);
+  if (error) throw new StpReadError(error.message);
+  return count ?? 0;
+}
+
 export async function getStpCurrentForService(
   searchParams: Record<string, string | string[] | undefined>,
 ): Promise<StpCurrentResult> {
@@ -207,7 +218,16 @@ export async function getStpCurrentForService(
     }
   }
 
-  const registeredServices = registerLiveServices(services);
+  const persistedCurrentByCode: Partial<Record<ServiceCode, number>> = {};
+  await Promise.all(
+    services.map(async (item) => {
+      const code = (item.service_code ?? "").toUpperCase();
+      if (!isServiceCode(code)) return;
+      persistedCurrentByCode[code] = await countCurrentForServiceId(item.id);
+    }),
+  );
+
+  const registeredServices = registerLiveServices(services, persistedCurrentByCode);
   const registered = registeredServices.find((row) => row.id === service.id);
   const total = count ?? stpRows.length;
   const pageCount = Math.max(1, Math.ceil(total / STP_PAGE_SIZE));
