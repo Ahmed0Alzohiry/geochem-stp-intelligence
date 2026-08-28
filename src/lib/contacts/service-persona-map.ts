@@ -193,6 +193,74 @@ export const ENV_CONTACT_PERSONAS: ServiceContactPersona[] = [
   }),
 ];
 
+/** INS Wave-1 personas. Not people. Not contact rows. */
+export const INS_CONTACT_PERSONAS: ServiceContactPersona[] = [
+  persona("INS", {
+    departmentName: "Inspection",
+    jobFunctionCode: "inspection",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 100,
+    relevanceReason: "Inspection and integrity owners specify third-party NDT, QA/QC, and statutory inspection programs.",
+  }),
+  persona("INS", {
+    departmentName: "Reliability",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 95,
+    relevanceReason: "Reliability programs drive turnaround, mechanical integrity, and equipment inspection demand.",
+  }),
+  persona("INS", {
+    departmentName: "QA/QC",
+    jobFunctionCode: "quality",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 92,
+    relevanceReason: "QA/QC owns vendor, construction, and product inspection requirements adjacent to GEOCHEM INS.",
+  }),
+  persona("INS", {
+    departmentName: "Engineering",
+    jobFunctionCode: "operations",
+    buyingRole: "USER",
+    priority: 2,
+    relevanceReason: "Operations/engineering consume integrity results; Engineering hosts operations in the current catalog.",
+    relevanceScore: 80,
+  }),
+  persona("INS", {
+    departmentName: "Projects",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 84,
+    relevanceReason: "EPC/project teams specify construction and vendor inspection during industrial projects.",
+  }),
+  persona("INS", {
+    departmentName: "Procurement",
+    jobFunctionCode: "procurement",
+    buyingRole: "PROCUREMENT",
+    priority: 1,
+    relevanceScore: 88,
+    relevanceReason: "Vendor selection and PO ownership for contracted industrial inspection services.",
+  }),
+  persona("INS", {
+    departmentName: "Procurement",
+    jobFunctionCode: "contracts",
+    buyingRole: "PROCUREMENT",
+    priority: 2,
+    relevanceScore: 76,
+    relevanceReason: "Frame agreements for inspection sit with procurement/contracts counterparts.",
+  }),
+  persona("INS", {
+    departmentName: "Inspection",
+    jobFunctionCode: "commercial",
+    buyingRole: "GATEKEEPER",
+    priority: 3,
+    relevanceScore: 70,
+    relevanceReason: "Vendor-management gatekeeping for approved inspection contractors. No Commercial department in the catalog.",
+  }),
+];
+
 export const SERVICE_CONTACT_PERSONAS: Record<ServiceCode, ServiceContactPersona[]> = {
   PCH: PCH_CONTACT_PERSONAS,
   PET: [],
@@ -200,7 +268,7 @@ export const SERVICE_CONTACT_PERSONAS: Record<ServiceCode, ServiceContactPersona
   ENV: ENV_CONTACT_PERSONAS,
   OCM: [],
   MCT: [],
-  INS: [],
+  INS: INS_CONTACT_PERSONAS,
   LAB: [],
 };
 
@@ -252,6 +320,28 @@ export function validateServicePersonaMap(): { ok: boolean; errors: string[] } {
   if (!env.some((row) => row.jobFunctionCode === "laboratory")) errors.push("ENV missing laboratory persona.");
   if (!env.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
     errors.push("ENV missing procurement persona.");
+  }
+
+  const ins = SERVICE_CONTACT_PERSONAS.INS;
+  if (ins.length !== 8) errors.push("INS must keep 8 Wave-1 personas.");
+  const insKeys = new Set<string>();
+  for (const row of ins) {
+    if (row.serviceCode !== "INS") errors.push("INS persona has the wrong serviceCode.");
+    if (!depts.has(row.departmentName)) errors.push(`INS department not in seeded catalog: ${row.departmentName}`);
+    if (!codes.has(row.jobFunctionCode)) errors.push(`INS unknown job function: ${row.jobFunctionCode}`);
+    const key = `${row.departmentName}::${row.jobFunctionCode}`;
+    if (insKeys.has(key)) errors.push(`INS duplicate persona ${key}`);
+    insKeys.add(key);
+  }
+  if (!ins.some((row) => row.departmentName === "Inspection" && row.priority === 1)) {
+    errors.push("INS missing priority-1 Inspection persona.");
+  }
+  if (!ins.some((row) => row.departmentName === "Reliability" && row.priority === 1)) {
+    errors.push("INS missing priority-1 Reliability persona.");
+  }
+  if (!ins.some((row) => row.jobFunctionCode === "quality")) errors.push("INS missing QA/QC persona.");
+  if (!ins.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
+    errors.push("INS missing procurement persona.");
   }
 
   return { ok: errors.length === 0, errors };

@@ -94,11 +94,14 @@ async function main() {
     opportunitiesZero: (opportunities.count ?? 0) === 0,
     noDemoOpportunities: (demoOpps.count ?? 0) === 0,
     otherServicesNoPersist: perService
-      .filter((row) => row.service !== "PCH" && row.service !== "ENV")
+      .filter((row) => row.service !== "PCH" && row.service !== "ENV" && row.service !== "INS")
       .every((row) => row.currentStp === 0 && row.scoreRows === 0),
     envNotPersistedOrWave1: perService
       .filter((row) => row.service === "ENV")
       .every((row) => row.currentStp === 0 || row.currentStp === 24),
+    insNotPersistedOrWave1: perService
+      .filter((row) => row.service === "INS")
+      .every((row) => row.currentStp === 0 || row.currentStp === 22),
   };
 
   const pass = Object.values(checks).every(Boolean);

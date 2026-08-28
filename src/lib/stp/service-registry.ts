@@ -2,7 +2,8 @@
  * Canonical GEOCHEM service registry for STP, targeting, dashboard, and personas.
  * Live catalog rows come from public.services. Do not invent services.
  * PCH remains persistence-approved. ENV is CONFIGURED only when Wave-1
- * persisted current count equals 24. Other services stay NOT_CONFIGURED.
+ * persisted current count equals 24. INS is CONFIGURED only when Wave-1
+ * persisted current count equals 22. Other services stay NOT_CONFIGURED.
  */
 import type { ServiceCode } from "./types";
 import { SERVICE_ELIGIBLE_INDUSTRIES } from "./eligibility";
@@ -10,6 +11,7 @@ import { SERVICE_PLAYBOOK } from "./positioning";
 import { COMMERCIAL_WEIGHTS, TIER_THRESHOLDS, KNOWN_WEIGHT_FLOOR } from "./weights";
 import { personasForService } from "../contacts/service-persona-map";
 import { ENV_WAVE1_EXPECTED_COUNT } from "./env-wave1-manifest";
+import { INS_WAVE1_EXPECTED_COUNT } from "./ins-wave1-manifest";
 
 export const DEFAULT_SERVICE_CODE: ServiceCode = "PCH";
 
@@ -57,7 +59,8 @@ export function getCanonicalServiceDefinition(code: ServiceCode): CanonicalServi
     persistenceApproved,
     personasApproved:
       (code === "PCH" && personasForService("PCH").length > 0) ||
-      (code === "ENV" && personasForService("ENV").length > 0),
+      (code === "ENV" && personasForService("ENV").length > 0) ||
+      (code === "INS" && personasForService("INS").length > 0),
     eligibleIndustries: [...SERVICE_ELIGIBLE_INDUSTRIES[code]].sort(),
     positioning: SERVICE_PLAYBOOK[code].positioning,
     commercialWeights: COMMERCIAL_WEIGHTS,
@@ -70,6 +73,9 @@ export function serviceReadiness(code: ServiceCode, persistedCurrentCount = 0): 
   if (code === "PCH") return "CONFIGURED";
   if (code === "ENV") {
     return persistedCurrentCount === ENV_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
+  }
+  if (code === "INS") {
+    return persistedCurrentCount === INS_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
   }
   return "NOT_CONFIGURED";
 }
@@ -119,7 +125,10 @@ export function registerLiveServices(
         ...row,
         serviceCode: code,
         readiness: serviceReadiness(code, persisted),
-        persistenceApproved: def.persistenceApproved || (code === "ENV" && persisted === ENV_WAVE1_EXPECTED_COUNT),
+        persistenceApproved:
+          def.persistenceApproved ||
+          (code === "ENV" && persisted === ENV_WAVE1_EXPECTED_COUNT) ||
+          (code === "INS" && persisted === INS_WAVE1_EXPECTED_COUNT),
         personasApproved: def.personasApproved,
         scoringModelPresent: def.scoringModelPresent,
         personaCount: personasForService(code).length,
@@ -146,10 +155,14 @@ export function validateServiceRegistry(rows: LiveCatalogService[]): { ok: boole
   if (getCanonicalServiceDefinition("ENV").persistenceApproved) {
     errors.push("ENV must not be statically persistence-approved; CONFIGURED requires 24 persisted Wave-1 rows.");
   }
+  if (getCanonicalServiceDefinition("INS").persistenceApproved) {
+    errors.push("INS must not be statically persistence-approved; CONFIGURED requires 22 persisted Wave-1 rows.");
+  }
   if (personasForService("PCH").length !== 8) errors.push("PCH must keep 8 personas.");
   if (personasForService("ENV").length !== 8) errors.push("ENV must keep 8 Wave-1 personas.");
+  if (personasForService("INS").length !== 8) errors.push("INS must keep 8 Wave-1 personas.");
   for (const code of CANONICAL_SERVICE_CODES) {
-    if (code === "PCH" || code === "ENV") continue;
+    if (code === "PCH" || code === "ENV" || code === "INS") continue;
     if (personasForService(code).length > 0) errors.push(`${code} personas were invented; keep empty until approved.`);
     if (getCanonicalServiceDefinition(code).persistenceApproved) {
       errors.push(`${code} must not be persistence-approved until independently validated.`);

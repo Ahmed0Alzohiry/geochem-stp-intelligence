@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createSupabaseBrowserClient } from "../supabase/client";
-import { collapseByAccountGroup } from "./account-group";
+import { collapseByAccountGroup, type ScoredAccount } from "./account-group";
 import { scoreServiceAccount } from "./score";
 import { mapScoredAccountToStpRow, type CompanyServiceStpScoreInsert } from "./stp-persist-row";
 import type { ServiceFirstInput, ServiceCode } from "./types";
@@ -71,14 +71,10 @@ async function fetchAll<T>(table: string, fields: string, idCol: string): Promis
   return rows;
 }
 
-export async function buildLiveServicePersistPayload(
-  serviceCode: ServiceCode,
-  scoredAt: string,
-): Promise<{
+export async function scoreLiveServiceUniverse(serviceCode: ServiceCode): Promise<{
   service: { id: string; name: string; service_code: string };
-  payload: CompanyServiceStpScoreInsert[];
-  groupedCount: number;
-  relatedSkippedGroups: number;
+  scored: ScoredAccount[];
+  companies: CompanyRow[];
 }> {
   loadEnvLocal();
   const supabase = createSupabaseBrowserClient();
@@ -130,7 +126,19 @@ export async function buildLiveServicePersistPayload(
     };
     return { input, result: scoreServiceAccount(input), accountGroupKey: meta?.account_group_key ?? company.id };
   });
+  return { service: { id: service.id, name: service.name, service_code: service.service_code }, scored, companies };
+}
 
+export async function buildLiveServicePersistPayload(
+  serviceCode: ServiceCode,
+  scoredAt: string,
+): Promise<{
+  service: { id: string; name: string; service_code: string };
+  payload: CompanyServiceStpScoreInsert[];
+  groupedCount: number;
+  relatedSkippedGroups: number;
+}> {
+  const { service, scored } = await scoreLiveServiceUniverse(serviceCode);
   const eligibleRows = scored.filter((row) => row.result.eligibility === "ELIGIBLE" && row.result.commercialScore != null);
   const groups = new Map<string, typeof eligibleRows>();
   for (const row of eligibleRows) {

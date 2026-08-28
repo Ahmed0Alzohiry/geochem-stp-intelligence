@@ -27,3 +27,10 @@ export {
   ENV_SERVICE_ID,
   PCH_SERVICE_ID,
 } from "./env-wave1-manifest";
+export {
+  INS_SERVICE_ID,
+  INS_WAVE1_EXPECTED_COUNT,
+  INS_WAVE1_MANIFEST_VERSION,
+  INS_WAVE1_COMPANY_IDS,
+  assertInsWave1ManifestIntegrity,
+} from "./ins-wave1-manifest";

@@ -126,6 +126,8 @@ export function runEnvWave1SelfTest(): { ok: boolean; failures: string[] } {
   if (serviceReadiness("PCH") !== "CONFIGURED") failures.push("PCH readiness");
   if (serviceReadiness("ENV") !== "NOT_CONFIGURED") failures.push("ENV readiness at count 0");
   if (serviceReadiness("ENV", 24) !== "CONFIGURED") failures.push("ENV readiness at count 24");
+  if (serviceReadiness("INS") !== "NOT_CONFIGURED") failures.push("INS readiness at count 0");
+  if (serviceReadiness("INS", 22) !== "CONFIGURED") failures.push("INS readiness at count 22");
 
   return { ok: failures.length === 0, failures };
 }

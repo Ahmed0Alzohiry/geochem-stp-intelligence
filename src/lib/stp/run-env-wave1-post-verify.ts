@@ -51,7 +51,7 @@ async function main() {
   const checks = {
     pch350: pch === 350,
     env24: env === 24,
-    total374: total.count === 374,
+    total374or396: total.count === 374 || total.count === 396,
     noUnexpected: unexpected.length === 0,
     noMissing: missing.length === 0,
     noDup: !dup,
