@@ -1,4 +1,10 @@
-import { decideEligibility, hasOcmApplicationEvidence, industryEligible, subsectorSuggestsApplication } from "./eligibility";
+import {
+  decideEligibility,
+  hasLabApplicationEvidence,
+  hasOcmApplicationEvidence,
+  industryEligible,
+  subsectorSuggestsApplication,
+} from "./eligibility";
 import { positioningFor, SERVICE_PLAYBOOK } from "./positioning";
 import type {
   CommercialTier,
@@ -130,6 +136,23 @@ function scoreSubsector(input: ServiceFirstInput): DimensionResult {
       "KNOWN",
       48,
       `Subsector "${subsector}" is in an OCM industry but is not a direct rotating-equipment / lube-oil application.`,
+    );
+  }
+  if (input.serviceCode === "LAB") {
+    if (hasLabApplicationEvidence(input.companyName, subsector)) {
+      return dim(
+        "subsectorFit",
+        "KNOWN",
+        96,
+        "Name/subsector indicates plant product, process-stream, or specification-testing LAB demand.",
+      );
+    }
+    if (!subsector) return dim("subsectorFit", "UNKNOWN", null, "Subsector is missing; not inferred from industry.");
+    return dim(
+      "subsectorFit",
+      "KNOWN",
+      48,
+      `Subsector "${subsector}" is in a LAB industry but is not plant/product-testing evidence.`,
     );
   }
   if (!subsector) return dim("subsectorFit", "UNKNOWN", null, "Subsector is missing; not inferred from industry.");

@@ -47,9 +47,10 @@ export const SERVICE_PLAYBOOK: Record<ServiceCode, PositioningPlaybook> = {
     departments: ["Inspection", "Reliability", "QA/QC"],
   },
   LAB: {
-    positioning: "GEOCHEM laboratory and QA/QC testing as a general analytical partner for industrial operations.",
+    positioning:
+      "GEOCHEM laboratory and testing services for product specification, process-stream QC, and overflow/third-party analysis at operating plants.",
     contactRoles: ["Technical", "Procurement"],
-    departments: ["Laboratory", "QA/QC", "HSE"],
+    departments: ["Laboratory", "QA/QC", "Operations"],
   },
 };
 
@@ -60,6 +61,9 @@ export function positioningFor(serviceCode: ServiceCode, companyName: string): s
 export function positioningForUseCase(serviceCode: ServiceCode, companyName: string, useCase: string): string {
   if (serviceCode === "OCM" && useCase.trim()) {
     return `For ${companyName}: GEOCHEM oil analysis and condition-monitoring support for ${useCase}.`;
+  }
+  if (serviceCode === "LAB" && useCase.trim()) {
+    return `For ${companyName}: GEOCHEM laboratory and testing services for ${useCase}.`;
   }
   return positioningFor(serviceCode, companyName);
 }

@@ -18,7 +18,12 @@
     "stp:pet-wave1-dry-run": "npx tsx --env-file=.env.local src/lib/stp/run-pet-wave1-persist.ts",
     "stp:ocm-wave1-self-test": "npx tsx src/lib/stp/run-ocm-wave1-self-test.ts",
     "stp:ocm-wave1-dry-run": "npx tsx --env-file=.env.local src/lib/stp/run-ocm-wave1-persist.ts",
-    "stp:ocm-wave1-post-verify": "npx tsx --env-file=.env.local src/lib/stp/run-ocm-wave1-post-verify.ts"
+    "stp:ocm-wave1-post-verify": "npx tsx --env-file=.env.local src/lib/stp/run-ocm-wave1-post-verify.ts",
+    "stp:lab-32-5-1-dry-run": "npx tsx --env-file=.env.local src/lib/stp/run-lab-32-5-1-dry-run.ts",
+    "stp:lab-32-5-2-validate": "npx tsx --env-file=.env.local src/lib/stp/run-lab-32-5-2-validate.ts",
+    "stp:lab-wave1-self-test": "npx tsx src/lib/stp/run-lab-wave1-self-test.ts",
+    "stp:lab-wave1-dry-run": "npx tsx --env-file=.env.local src/lib/stp/run-lab-wave1-persist.ts",
+    "stp:lab-wave1-post-verify": "npx tsx --env-file=.env.local src/lib/stp/run-lab-wave1-post-verify.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

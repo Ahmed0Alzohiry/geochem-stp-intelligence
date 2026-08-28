@@ -95,8 +95,19 @@ async function main() {
     opportunitiesZero: (opportunities.count ?? 0) === 0,
     noDemoOpportunities: (demoOpps.count ?? 0) === 0,
     otherServicesNoPersist: perService
-      .filter((row) => row.service !== "PCH" && row.service !== "ENV" && row.service !== "INS" && row.service !== "PET")
+      .filter(
+        (row) =>
+          row.service !== "PCH" &&
+          row.service !== "ENV" &&
+          row.service !== "INS" &&
+          row.service !== "PET" &&
+          row.service !== "OCM" &&
+          row.service !== "LAB",
+      )
       .every((row) => row.currentStp === 0 && row.scoreRows === 0),
+    labNotPersistedOrWave1: perService
+      .filter((row) => row.service === "LAB")
+      .every((row) => row.currentStp === 0 || row.currentStp === 21),
     petNotPersistedOrWave1: perService
       .filter((row) => row.service === "PET")
       .every((row) => row.currentStp === 0 || row.currentStp === 18),

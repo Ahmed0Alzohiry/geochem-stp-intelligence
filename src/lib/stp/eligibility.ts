@@ -45,7 +45,8 @@ export const SERVICE_ELIGIBLE_INDUSTRIES: Record<ServiceCode, Set<string>> = {
   OCM: OCM_INDUSTRIES,
   MCT: HEAVY_INDUSTRIAL,
   INS: HEAVY_INDUSTRIAL,
-  LAB: new Set([...HEAVY_INDUSTRIAL, "Industrial Services", "Government / Public Sector"]),
+  /** Industry is a filter only. LAB also requires plant/product-testing evidence. */
+  LAB: OCM_INDUSTRIES,
 };
 
 const APPLICATION: Record<ServiceCode, RegExp> = {
@@ -56,7 +57,7 @@ const APPLICATION: Record<ServiceCode, RegExp> = {
   OCM: /lubricant|lube oil|used oil|oil condition|wear metal|rotating equipment|compressor|turbine|gearbox|hydraulic|base oil|refin|petrochem|polymer|polypropylene|polyethylene|olefin|gas plant|gas process|power plant|power generation|thermal power|independent power|\bipp\b|\biwpp\b|desal|cement|rolling mill|steel mill|kiln|integrated chemical/i,
   MCT: /metering|calibration|custody|tank farm|terminal|pipeline|topograph/i,
   INS: /inspection|integrity|ndt|pipeline|plant|turnaround|corrosion|coating/i,
-  LAB: /laboratory|qa\/qc|quality|testing|analytical|hse|process chemistry/i,
+  LAB: /refin|petrochem|polymer|polyethylene|polypropylene|polyolefin|base oil|gas plant|gas process|cracker|olefin|integrated chemical|process chemistry|feedstock|hydrocarbon stream|samref|yasref|luberef|yanpet|satorp|sasref|yansab|natpet|sipchem|hawiyah|ras tanura|jazan refinery|riyadh refinery|petro rabigh|petrokemya|\bkemya\b|\bsharq\b|sadara|product.?qc/i,
 };
 
 export function industryEligible(serviceCode: ServiceCode, industry: string | null): boolean {
@@ -74,6 +75,22 @@ export function hasOcmApplicationEvidence(companyName: string | null, subsector:
   const blob = [companyName, subsector].filter(Boolean).join(" | ");
   if (!blob) return false;
   return APPLICATION.OCM.test(blob);
+}
+
+const LAB_COMPETITOR =
+  /\bsgs\b|intertek|bureau veritas|\bbv\b|applus|t[uü]v|element materials|saybolt|core lab|core laboratories|arabian lab|arabian laboratories|als limited|\bals\b testing/i;
+
+/** TIC / independent-lab competitors are not GEOCHEM LAB buyers. */
+export function isLabCompetitorName(companyName: string | null): boolean {
+  return Boolean(companyName && LAB_COMPETITOR.test(companyName));
+}
+
+/** Plant / product-stream evidence. Industry membership and PCH/ENV/INS/PET/OCM overlap are not enough. */
+export function hasLabApplicationEvidence(companyName: string | null, subsector: string | null): boolean {
+  if (isLabCompetitorName(companyName)) return false;
+  const blob = [companyName, subsector].filter(Boolean).join(" | ");
+  if (!blob) return false;
+  return APPLICATION.LAB.test(blob);
 }
 
 export function decideEligibility(input: ServiceFirstInput): {
@@ -100,6 +117,19 @@ export function decideEligibility(input: ServiceFirstInput): {
       decision: "OUT_OF_SCOPE",
       reason:
         "OCM requires plant/fleet evidence of rotating equipment, lubrication systems, or equivalent — industry membership alone is not eligible.",
+    };
+  }
+  if (input.serviceCode === "LAB" && isLabCompetitorName(input.companyName)) {
+    return {
+      decision: "OUT_OF_SCOPE",
+      reason: "Independent laboratory / TIC / certification competitors are excluded from GEOCHEM LAB targeting.",
+    };
+  }
+  if (input.serviceCode === "LAB" && !hasLabApplicationEvidence(input.companyName, input.subsector)) {
+    return {
+      decision: "OUT_OF_SCOPE",
+      reason:
+        "LAB requires commercially credible plant or product-testing evidence — industry membership and cross-sell overlap do not create eligibility.",
     };
   }
   return {

@@ -34,3 +34,10 @@ export {
   INS_WAVE1_COMPANY_IDS,
   assertInsWave1ManifestIntegrity,
 } from "./ins-wave1-manifest";
+export {
+  LAB_SERVICE_ID,
+  LAB_WAVE1_EXPECTED_COUNT,
+  LAB_WAVE1_MANIFEST_VERSION,
+  LAB_WAVE1_COMPANY_IDS,
+  assertLabWave1ManifestIntegrity,
+} from "./lab-wave1-manifest";

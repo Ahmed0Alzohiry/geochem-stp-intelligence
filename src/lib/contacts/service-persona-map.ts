@@ -329,6 +329,74 @@ export const OCM_CONTACT_PERSONAS: ServiceContactPersona[] = [
   }),
 ];
 
+/** LAB Wave-1 personas. Not people. Not contact rows. Catalog has no Operations department. */
+export const LAB_CONTACT_PERSONAS: ServiceContactPersona[] = [
+  persona("LAB", {
+    departmentName: "Laboratory",
+    jobFunctionCode: "laboratory",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 100,
+    relevanceReason: "Site and central labs own product, process-stream, and overflow testing programs.",
+  }),
+  persona("LAB", {
+    departmentName: "QA/QC",
+    jobFunctionCode: "quality",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 96,
+    relevanceReason: "Quality managers approve methods, specs, and release testing — the commercial LAB buyer path.",
+  }),
+  persona("LAB", {
+    departmentName: "Maintenance",
+    jobFunctionCode: "operations",
+    buyingRole: "USER",
+    priority: 1,
+    relevanceScore: 88,
+    relevanceReason: "Operations / production consume lab results for process control. No Operations department in the catalog.",
+  }),
+  persona("LAB", {
+    departmentName: "Engineering",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 84,
+    relevanceReason: "Process/production engineers specify third-party and overflow analytical work.",
+  }),
+  persona("LAB", {
+    departmentName: "Environment",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 74,
+    relevanceReason: "Environmental counterparts buy complementary lab work adjacent to process QC at gas and complex sites.",
+  }),
+  persona("LAB", {
+    departmentName: "Inspection",
+    jobFunctionCode: "inspection",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 78,
+    relevanceReason: "Inspection/integrity programs at refineries pull product and material testing from LAB.",
+  }),
+  persona("LAB", {
+    departmentName: "Reliability",
+    jobFunctionCode: "technical_services",
+    buyingRole: "INFLUENCER",
+    priority: 3,
+    relevanceReason: "Reliability counterparts influence process-sample and failure-investigation testing.",
+    relevanceScore: 70,
+  }),
+  persona("LAB", {
+    departmentName: "Procurement",
+    jobFunctionCode: "procurement",
+    buyingRole: "PROCUREMENT",
+    priority: 1,
+    relevanceScore: 90,
+    relevanceReason: "Vendor selection and frame agreements for contracted laboratory / testing services.",
+  }),
+];
+
 export const SERVICE_CONTACT_PERSONAS: Record<ServiceCode, ServiceContactPersona[]> = {
   PCH: PCH_CONTACT_PERSONAS,
   PET: [],
@@ -337,7 +405,7 @@ export const SERVICE_CONTACT_PERSONAS: Record<ServiceCode, ServiceContactPersona
   OCM: OCM_CONTACT_PERSONAS,
   MCT: [],
   INS: INS_CONTACT_PERSONAS,
-  LAB: [],
+  LAB: LAB_CONTACT_PERSONAS,
 };
 
 export function personasForService(serviceCode: string): ServiceContactPersona[] {
@@ -432,6 +500,28 @@ export function validateServicePersonaMap(): { ok: boolean; errors: string[] } {
   if (!ocm.some((row) => row.jobFunctionCode === "laboratory")) errors.push("OCM missing laboratory persona.");
   if (!ocm.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
     errors.push("OCM missing procurement persona.");
+  }
+
+  const lab = SERVICE_CONTACT_PERSONAS.LAB;
+  if (lab.length !== 8) errors.push("LAB must keep 8 Wave-1 personas.");
+  const labKeys = new Set<string>();
+  for (const row of lab) {
+    if (row.serviceCode !== "LAB") errors.push("LAB persona has the wrong serviceCode.");
+    if (!depts.has(row.departmentName)) errors.push(`LAB department not in seeded catalog: ${row.departmentName}`);
+    if (!codes.has(row.jobFunctionCode)) errors.push(`LAB unknown job function: ${row.jobFunctionCode}`);
+    const key = `${row.departmentName}::${row.jobFunctionCode}`;
+    if (labKeys.has(key)) errors.push(`LAB duplicate persona ${key}`);
+    labKeys.add(key);
+  }
+  if (!lab.some((row) => row.departmentName === "Laboratory" && row.priority === 1)) {
+    errors.push("LAB missing priority-1 Laboratory persona.");
+  }
+  if (!lab.some((row) => row.departmentName === "QA/QC" && row.priority === 1)) {
+    errors.push("LAB missing priority-1 QA/QC persona.");
+  }
+  if (!lab.some((row) => row.jobFunctionCode === "operations")) errors.push("LAB missing operations persona.");
+  if (!lab.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
+    errors.push("LAB missing procurement persona.");
   }
 
   return { ok: errors.length === 0, errors };
