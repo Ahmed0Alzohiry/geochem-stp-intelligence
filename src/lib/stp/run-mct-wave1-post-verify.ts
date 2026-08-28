@@ -1,26 +1,30 @@
 /**
- * OCM Wave-1 post-write verification. SELECT only. Does not persist.
+ * MCT Wave-1 post-write verification. SELECT only. Does not persist.
  */
+import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { loadEnvLocal } from "./build-pch-persist-payload";
 import { ENV_SERVICE_ID, ENV_WAVE1_COMPANY_IDS, PCH_SERVICE_ID } from "./env-wave1-manifest";
 import { INS_SERVICE_ID, INS_WAVE1_COMPANY_IDS } from "./ins-wave1-manifest";
+import { LAB_SERVICE_ID, LAB_WAVE1_COMPANY_IDS } from "./lab-wave1-manifest";
+import { OCM_SERVICE_ID, OCM_WAVE1_COMPANY_IDS } from "./ocm-wave1-manifest";
 import { PET_SERVICE_ID, PET_WAVE1_COMPANY_IDS } from "./pet-wave1-manifest";
 import {
-  OCM_PETRO_RABIGH_POLYMER_ID,
-  OCM_PETRO_RABIGH_REFINING_ID,
-  OCM_SERVICE_ID,
-  OCM_WAVE1_ACCOUNTS,
-  OCM_WAVE1_COMPANY_IDS,
-  OCM_WAVE1_EXPECTED_COUNT,
-} from "./ocm-wave1-manifest";
+  MCT_PETRO_RABIGH_POLYMER_ID,
+  MCT_PETRO_RABIGH_REFINING_ID,
+  MCT_SERVICE_ID,
+  MCT_WAVE1_ACCOUNTS,
+  MCT_WAVE1_COMPANY_IDS,
+  MCT_WAVE1_EXPECTED_COUNT,
+} from "./mct-wave1-manifest";
 import { serviceReadiness } from "./service-registry";
 import { personasForService } from "../contacts/service-persona-map";
-import { buildOcmWave1PersistPayload } from "./build-ocm-wave1-payload";
+import { buildMctWave1PersistPayload } from "./build-mct-wave1-payload";
 import { getStpAccountDetail, getStpCurrentForService } from "../supabase/stp-current";
+import { isMctCompetitorName } from "./eligibility";
 
 const PCH_RANK1 = "bcb70c34-0c5e-4316-8f64-d4e3fb1d45fe";
-const TOTAL_AFTER_OCM = 350 + 24 + 22 + 18 + 25 + 21 + 26;
+const TOTAL_AFTER_MCT = 350 + 24 + 22 + 18 + 25 + 21 + 26;
 
 function timedClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -59,6 +63,10 @@ async function currentCompanyIds(serviceId: string): Promise<string[]> {
   return ids;
 }
 
+function idHash(ids: string[]): string {
+  return createHash("sha256").update([...ids].sort().join(",")).digest("hex");
+}
+
 async function main() {
   loadEnvLocal();
   const supabase = timedClient();
@@ -67,21 +75,25 @@ async function main() {
   const ins = await countEq("company_service_stp_current", "service_id", INS_SERVICE_ID);
   const pet = await countEq("company_service_stp_current", "service_id", PET_SERVICE_ID);
   const ocm = await countEq("company_service_stp_current", "service_id", OCM_SERVICE_ID);
+  const lab = await countEq("company_service_stp_current", "service_id", LAB_SERVICE_ID);
+  const mct = await countEq("company_service_stp_current", "service_id", MCT_SERVICE_ID);
   const total = await supabase.from("company_service_stp_current").select("id", { count: "exact", head: true });
   const pchIds = await currentCompanyIds(PCH_SERVICE_ID);
   const envIds = await currentCompanyIds(ENV_SERVICE_ID);
   const insIds = await currentCompanyIds(INS_SERVICE_ID);
   const petIds = await currentCompanyIds(PET_SERVICE_ID);
   const ocmIds = await currentCompanyIds(OCM_SERVICE_ID);
+  const labIds = await currentCompanyIds(LAB_SERVICE_ID);
+  const mctIds = await currentCompanyIds(MCT_SERVICE_ID);
 
-  const { data: ocmRows, error } = await supabase
+  const { data: mctRows, error } = await supabase
     .from("company_service_stp_current")
     .select(
-      "id, company_id, service_id, account_group_key, commercial_score, tier, application_fit, data_confidence_score, data_confidence_band, positioning_statement, ranking_eligible, eligibility, recommended_contact_roles, recommended_departments, scoring_model_version, scored_at",
+      "id, company_id, service_id, account_group_key, entity_type, commercial_score, tier, application_fit, data_confidence_score, data_confidence_band, positioning_statement, targeting_reason, ranking_eligible, eligibility, recommended_contact_roles, recommended_departments, scoring_model_version, scored_at, companies(company_name)",
     )
-    .eq("service_id", OCM_SERVICE_ID);
+    .eq("service_id", MCT_SERVICE_ID);
   if (error) throw new Error(error.message);
-  const rows = ocmRows ?? [];
+  const rows = mctRows ?? [];
   const byId = new Map(rows.map((row) => [row.company_id, row]));
 
   const { data: pchMeta } = await supabase
@@ -91,53 +103,46 @@ async function main() {
     .eq("company_id", PCH_RANK1)
     .maybeSingle();
 
-  const { data: pchTimes } = await supabase
-    .from("company_service_stp_current")
-    .select("scored_at")
-    .eq("service_id", PCH_SERVICE_ID)
-    .order("scored_at", { ascending: false })
-    .limit(1);
-  const { data: envTimes } = await supabase
-    .from("company_service_stp_current")
-    .select("scored_at")
-    .eq("service_id", ENV_SERVICE_ID)
-    .order("scored_at", { ascending: false })
-    .limit(1);
-  const { data: insTimes } = await supabase
-    .from("company_service_stp_current")
-    .select("scored_at")
-    .eq("service_id", INS_SERVICE_ID)
-    .order("scored_at", { ascending: false })
-    .limit(1);
-  const { data: petTimes } = await supabase
-    .from("company_service_stp_current")
-    .select("scored_at")
-    .eq("service_id", PET_SERVICE_ID)
-    .order("scored_at", { ascending: false })
-    .limit(1);
-  const { data: ocmTimes } = await supabase
-    .from("company_service_stp_current")
-    .select("scored_at")
-    .eq("service_id", OCM_SERVICE_ID)
-    .order("scored_at", { ascending: true })
-    .limit(1);
+  const latest = async (serviceId: string, ascending: boolean) => {
+    const { data } = await supabase
+      .from("company_service_stp_current")
+      .select("scored_at")
+      .eq("service_id", serviceId)
+      .order("scored_at", { ascending })
+      .limit(1);
+    return data?.[0]?.scored_at ?? null;
+  };
+  const pchMax = await latest(PCH_SERVICE_ID, false);
+  const envMax = await latest(ENV_SERVICE_ID, false);
+  const insMax = await latest(INS_SERVICE_ID, false);
+  const petMax = await latest(PET_SERVICE_ID, false);
+  const ocmMax = await latest(OCM_SERVICE_ID, false);
+  const labMax = await latest(LAB_SERVICE_ID, false);
+  const mctMin = await latest(MCT_SERVICE_ID, true);
 
-  const expected = await buildOcmWave1PersistPayload(new Date().toISOString());
+  const expected = await buildMctWave1PersistPayload(new Date().toISOString());
   const expectedById = new Map(expected.payload.map((row) => [row.company_id, row]));
 
-  const unexpected = ocmIds.filter((id) => !OCM_WAVE1_COMPANY_IDS.includes(id));
-  const missing = OCM_WAVE1_COMPANY_IDS.filter((id) => !ocmIds.includes(id));
+  const unexpected = mctIds.filter((id) => !MCT_WAVE1_COMPANY_IDS.includes(id));
+  const missing = MCT_WAVE1_COMPANY_IDS.filter((id) => !mctIds.includes(id));
   const envUnexpected = envIds.filter((id) => !ENV_WAVE1_COMPANY_IDS.includes(id));
   const envMissing = ENV_WAVE1_COMPANY_IDS.filter((id) => !envIds.includes(id));
   const insUnexpected = insIds.filter((id) => !INS_WAVE1_COMPANY_IDS.includes(id));
   const insMissing = INS_WAVE1_COMPANY_IDS.filter((id) => !insIds.includes(id));
   const petUnexpected = petIds.filter((id) => !PET_WAVE1_COMPANY_IDS.includes(id));
   const petMissing = PET_WAVE1_COMPANY_IDS.filter((id) => !petIds.includes(id));
-  const dup = ocmIds.length !== new Set(ocmIds).size;
+  const ocmUnexpected = ocmIds.filter((id) => !OCM_WAVE1_COMPANY_IDS.includes(id));
+  const ocmMissing = OCM_WAVE1_COMPANY_IDS.filter((id) => !ocmIds.includes(id));
+  const labUnexpected = labIds.filter((id) => !LAB_WAVE1_COMPANY_IDS.includes(id));
+  const labMissing = LAB_WAVE1_COMPANY_IDS.filter((id) => !labIds.includes(id));
+  const dup = mctIds.length !== new Set(mctIds).size;
   const groups = rows.map((row) => row.account_group_key);
   const uniqueGroups = new Set(groups).size;
+  const tier1 = rows.filter((row) => row.tier === "Tier 1").length;
+  const tier2 = rows.filter((row) => row.tier === "Tier 2").length;
+  const tier3 = rows.filter((row) => row.tier === "Tier 3").length;
 
-  const scoreMismatches = OCM_WAVE1_ACCOUNTS.filter((entry) => {
+  const scoreMismatches = MCT_WAVE1_ACCOUNTS.filter((entry) => {
     const live = byId.get(entry.companyId);
     const exp = expectedById.get(entry.companyId);
     return (
@@ -150,7 +155,7 @@ async function main() {
   });
   const fieldGaps = rows.filter(
     (row) =>
-      row.service_id !== OCM_SERVICE_ID ||
+      row.service_id !== MCT_SERVICE_ID ||
       row.eligibility !== "ELIGIBLE" ||
       row.commercial_score == null ||
       (row.tier !== "Tier 2" && row.tier !== "Tier 3") ||
@@ -159,65 +164,75 @@ async function main() {
       !row.data_confidence_band ||
       row.data_confidence_band === "LOW" ||
       !row.positioning_statement ||
+      !row.targeting_reason ||
       row.scoring_model_version !== "6.4.0" ||
       !Array.isArray(row.recommended_contact_roles) ||
       row.recommended_contact_roles.length === 0 ||
       !Array.isArray(row.recommended_departments) ||
       row.recommended_departments.length === 0,
   );
+  const competitorRows = rows.filter((row) => {
+    const name = (row as { companies?: { company_name?: string } | { company_name?: string }[] }).companies;
+    const companyName = Array.isArray(name) ? name[0]?.company_name : name?.company_name;
+    return isMctCompetitorName(companyName ?? null);
+  });
 
-  const targeting = await getStpCurrentForService({ service: "OCM", page: "1" });
+  const targeting = await getStpCurrentForService({ service: "MCT", page: "1" });
   const pchTargeting = await getStpCurrentForService({ service: "PCH", page: "1" });
-  const petTargeting = await getStpCurrentForService({ service: "PET", page: "1" });
-  const firstOcm = targeting.rows[0];
-  const detail = firstOcm ? await getStpAccountDetail(firstOcm.id, { service: "OCM" }) : null;
+  const labTargeting = await getStpCurrentForService({ service: "LAB", page: "1" });
+  const firstMct = targeting.rows[0];
+  const detail = firstMct ? await getStpAccountDetail(firstMct.id, { service: "MCT" }) : null;
 
-  const pchMax = pchTimes?.[0]?.scored_at ?? null;
-  const envMax = envTimes?.[0]?.scored_at ?? null;
-  const insMax = insTimes?.[0]?.scored_at ?? null;
-  const petMax = petTimes?.[0]?.scored_at ?? null;
-  const ocmMin = ocmTimes?.[0]?.scored_at ?? null;
-  const pchNotRewritten = Boolean(pchMax && ocmMin && pchMax < ocmMin);
-  const envNotRewritten = Boolean(envMax && ocmMin && envMax < ocmMin);
-  const insNotRewritten = Boolean(insMax && ocmMin && insMax < ocmMin);
-  const petNotRewritten = Boolean(petMax && ocmMin && petMax < ocmMin);
+  const notRewritten = (max: string | null) => Boolean(max && mctMin && max < mctMin);
 
   const checks = {
     pch350: pch === 350 && pchIds.length === 350 && new Set(pchIds).size === 350,
     env24: env === 24 && envIds.length === 24,
     ins22: ins === 22 && insIds.length === 22,
     pet18: pet === 18 && petIds.length === 18,
-    ocm25: ocm === OCM_WAVE1_EXPECTED_COUNT && rows.length === 25,
-    total486: total.count === TOTAL_AFTER_OCM,
+    ocm25: ocm === 25 && ocmIds.length === 25,
+    lab21: lab === 21 && labIds.length === 21,
+    mct26: mct === MCT_WAVE1_EXPECTED_COUNT && rows.length === 26,
+    total486: total.count === TOTAL_AFTER_MCT,
     noUnexpected: unexpected.length === 0,
     noMissing: missing.length === 0,
     noDup: !dup,
-    uniqueGroups25: uniqueGroups === 25,
-    allOcmServiceId: rows.every((row) => row.service_id === OCM_SERVICE_ID),
+    uniqueGroups26: uniqueGroups === 26,
+    allMctServiceId: rows.every((row) => row.service_id === MCT_SERVICE_ID),
     scoresMatchApproved: scoreMismatches.length === 0,
     fieldsOk: fieldGaps.length === 0,
-    polymerPresent: ocmIds.includes(OCM_PETRO_RABIGH_POLYMER_ID),
-    refiningAbsent: !ocmIds.includes(OCM_PETRO_RABIGH_REFINING_ID),
+    noCompetitors: competitorRows.length === 0,
+    bothRabighPlants: mctIds.includes(MCT_PETRO_RABIGH_REFINING_ID) && mctIds.includes(MCT_PETRO_RABIGH_POLYMER_ID),
+    tier1is0: tier1 === 0,
+    tier2is9: tier2 === 9,
+    tier3is17: tier3 === 17,
     pchRank1: pchMeta?.company_id === PCH_RANK1,
     envIdsUnchanged: envUnexpected.length === 0 && envMissing.length === 0,
     insIdsUnchanged: insUnexpected.length === 0 && insMissing.length === 0,
     petIdsUnchanged: petUnexpected.length === 0 && petMissing.length === 0,
-    pchNotRewritten,
-    envNotRewritten,
-    insNotRewritten,
-    petNotRewritten,
+    ocmIdsUnchanged: ocmUnexpected.length === 0 && ocmMissing.length === 0,
+    labIdsUnchanged: labUnexpected.length === 0 && labMissing.length === 0,
+    pchNotRewritten: notRewritten(pchMax),
+    envNotRewritten: notRewritten(envMax),
+    insNotRewritten: notRewritten(insMax),
+    petNotRewritten: notRewritten(petMax),
+    ocmNotRewritten: notRewritten(ocmMax),
+    labNotRewritten: notRewritten(labMax),
     pchConfigured: serviceReadiness("PCH", pch) === "CONFIGURED",
     envConfigured: serviceReadiness("ENV", env) === "CONFIGURED",
     insConfigured: serviceReadiness("INS", ins) === "CONFIGURED",
     petConfigured: serviceReadiness("PET", pet) === "CONFIGURED",
     ocmConfigured: serviceReadiness("OCM", ocm) === "CONFIGURED",
-    ocmPersonas8: personasForService("OCM").length === 8,
-    targetingOcm25: targeting.total === 25 && targeting.readiness === "CONFIGURED",
-    targetingOcmOnly: targeting.rows.every((row) => row.serviceCode === "OCM" && row.serviceId === OCM_SERVICE_ID),
+    labConfigured: serviceReadiness("LAB", lab) === "CONFIGURED",
+    mctConfigured: serviceReadiness("MCT", mct) === "CONFIGURED",
+    mctPersonas8: personasForService("MCT").length === 8,
+    targetingMct26: targeting.total === 26 && targeting.readiness === "CONFIGURED",
+    targetingMctOnly: targeting.rows.every((row) => row.serviceCode === "MCT" && row.serviceId === MCT_SERVICE_ID),
     targetingNoPchLeak: targeting.rows.every((row) => row.serviceId !== PCH_SERVICE_ID),
     pchTargetingUnchanged: pchTargeting.total === 350 && pchTargeting.rows[0]?.companyId === PCH_RANK1,
-    petTargetingUnchanged: petTargeting.total === 18,
-    accountDetail: Boolean(detail && detail.serviceCode === "OCM" && detail.companyId === firstOcm?.companyId),
+    labTargetingUnchanged: labTargeting.total === 21,
+    accountDetail: Boolean(detail && detail.serviceCode === "MCT" && detail.companyId === firstMct?.companyId),
+    idHashesPresent: Boolean(idHash(pchIds) && idHash(labIds)),
   };
 
   const pass = Object.values(checks).every(Boolean);
@@ -231,23 +246,33 @@ async function main() {
         ins,
         pet,
         ocm,
+        lab,
+        mct,
         totalCurrent: total.count,
-        uniqueOcmAccounts: new Set(ocmIds).size,
+        uniqueMctAccounts: new Set(mctIds).size,
         uniqueGroups,
         duplicates: dup,
         unexpected,
         missing,
+        competitors: competitorRows.map((row) => row.company_id),
+        tier1,
+        tier2,
+        tier3,
         scoreMismatches: scoreMismatches.map((row) => row.companyId),
         fieldGaps: fieldGaps.length,
         targetingTotal: targeting.total,
         targetingReadiness: targeting.readiness,
         detailCompanyId: detail?.companyId ?? null,
-        pchMaxScoredAt: pchMax,
-        envMaxScoredAt: envMax,
-        insMaxScoredAt: insMax,
-        petMaxScoredAt: petMax,
-        ocmMinScoredAt: ocmMin,
-        ocmReadiness: serviceReadiness("OCM", ocm),
+        mctReadiness: serviceReadiness("MCT", mct),
+        hashes: {
+          pch: idHash(pchIds),
+          env: idHash(envIds),
+          ins: idHash(insIds),
+          pet: idHash(petIds),
+          ocm: idHash(ocmIds),
+          lab: idHash(labIds),
+          mct: idHash(mctIds),
+        },
       },
       null,
       2,

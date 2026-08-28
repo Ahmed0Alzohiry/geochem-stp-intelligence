@@ -1,7 +1,7 @@
 import type { ServiceCode } from "../stp/types";
 import type { ServiceBuyingRole } from "../../types/contact-intelligence";
 
-export const SERVICE_PERSONA_MAP_VERSION = "7.4.0";
+export const SERVICE_PERSONA_MAP_VERSION = "7.5.0";
 
 /** Live master-data department names (migration 002). Do not invent people. */
 export const SEEDED_DEPARTMENT_NAMES = [
@@ -397,13 +397,81 @@ export const LAB_CONTACT_PERSONAS: ServiceContactPersona[] = [
   }),
 ];
 
+/** MCT Wave-1 personas. Not people. Not contact rows. Survey/Projects only when topography is evidenced. */
+export const MCT_CONTACT_PERSONAS: ServiceContactPersona[] = [
+  persona("MCT", {
+    departmentName: "Engineering",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 100,
+    relevanceReason: "Instrumentation / metering engineers own process measurement accuracy and I&C calibration programs.",
+  }),
+  persona("MCT", {
+    departmentName: "Inspection",
+    jobFunctionCode: "inspection",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 96,
+    relevanceReason: "Metering and custody-transfer verification typically sits with inspection / measurement teams.",
+  }),
+  persona("MCT", {
+    departmentName: "Laboratory",
+    jobFunctionCode: "laboratory",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 90,
+    relevanceReason: "Laboratory / test-equipment calibration is a primary MCT buying path at process plants.",
+  }),
+  persona("MCT", {
+    departmentName: "QA/QC",
+    jobFunctionCode: "quality",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 84,
+    relevanceReason: "QA/QC owns calibration compliance and measurement traceability for process and lab instruments.",
+  }),
+  persona("MCT", {
+    departmentName: "Maintenance",
+    jobFunctionCode: "operations",
+    buyingRole: "USER",
+    priority: 1,
+    relevanceScore: 88,
+    relevanceReason: "Maintenance / operations managers consume meter proving and instrument-calibration work. No Operations department in the catalog.",
+  }),
+  persona("MCT", {
+    departmentName: "Reliability",
+    jobFunctionCode: "technical_services",
+    buyingRole: "INFLUENCER",
+    priority: 2,
+    relevanceScore: 78,
+    relevanceReason: "Reliability counterparts influence measurement-accuracy and instrument-health programs.",
+  }),
+  persona("MCT", {
+    departmentName: "Procurement",
+    jobFunctionCode: "procurement",
+    buyingRole: "PROCUREMENT",
+    priority: 1,
+    relevanceScore: 86,
+    relevanceReason: "Vendor selection and frame agreements for contracted metering and calibration services.",
+  }),
+  persona("MCT", {
+    departmentName: "Projects",
+    jobFunctionCode: "technical_services",
+    buyingRole: "INFLUENCER",
+    priority: 3,
+    relevanceScore: 62,
+    relevanceReason: "Survey/projects role is relevant only when plant/site topography is evidenced — not a default Wave-1 buying path.",
+  }),
+];
+
 export const SERVICE_CONTACT_PERSONAS: Record<ServiceCode, ServiceContactPersona[]> = {
   PCH: PCH_CONTACT_PERSONAS,
   PET: [],
   MIN: [],
   ENV: ENV_CONTACT_PERSONAS,
   OCM: OCM_CONTACT_PERSONAS,
-  MCT: [],
+  MCT: MCT_CONTACT_PERSONAS,
   INS: INS_CONTACT_PERSONAS,
   LAB: LAB_CONTACT_PERSONAS,
 };
@@ -522,6 +590,30 @@ export function validateServicePersonaMap(): { ok: boolean; errors: string[] } {
   if (!lab.some((row) => row.jobFunctionCode === "operations")) errors.push("LAB missing operations persona.");
   if (!lab.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
     errors.push("LAB missing procurement persona.");
+  }
+
+  const mct = SERVICE_CONTACT_PERSONAS.MCT;
+  if (mct.length !== 8) errors.push("MCT must keep 8 Wave-1 personas.");
+  const mctKeys = new Set<string>();
+  for (const row of mct) {
+    if (row.serviceCode !== "MCT") errors.push("MCT persona has the wrong serviceCode.");
+    if (!depts.has(row.departmentName)) errors.push(`MCT department not in seeded catalog: ${row.departmentName}`);
+    if (!codes.has(row.jobFunctionCode)) errors.push(`MCT unknown job function: ${row.jobFunctionCode}`);
+    const key = `${row.departmentName}::${row.jobFunctionCode}`;
+    if (mctKeys.has(key)) errors.push(`MCT duplicate persona ${key}`);
+    mctKeys.add(key);
+  }
+  if (!mct.some((row) => row.departmentName === "Engineering" && row.priority === 1)) {
+    errors.push("MCT missing priority-1 Engineering / instrumentation persona.");
+  }
+  if (!mct.some((row) => row.departmentName === "Inspection" && row.priority === 1)) {
+    errors.push("MCT missing priority-1 Inspection / metering persona.");
+  }
+  if (!mct.some((row) => row.departmentName === "Laboratory" && row.priority === 1)) {
+    errors.push("MCT missing priority-1 Laboratory / calibration persona.");
+  }
+  if (!mct.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
+    errors.push("MCT missing procurement persona.");
   }
 
   return { ok: errors.length === 0, errors };

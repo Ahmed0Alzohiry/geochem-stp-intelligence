@@ -3,6 +3,7 @@
  */
 import { ENV_SERVICE_ID, PCH_SERVICE_ID } from "./env-wave1-manifest";
 import { INS_SERVICE_ID } from "./ins-wave1-manifest";
+import { MCT_SERVICE_ID } from "./mct-wave1-manifest";
 import { OCM_SERVICE_ID } from "./ocm-wave1-manifest";
 import { PET_SERVICE_ID } from "./pet-wave1-manifest";
 import {
@@ -126,6 +127,7 @@ export function runLabWave1SelfTest(): { ok: boolean; failures: string[] } {
   if (rejectNonLabServiceId(INS_SERVICE_ID) == null) failures.push("writer must reject INS service_id");
   if (rejectNonLabServiceId(PET_SERVICE_ID) == null) failures.push("writer must reject PET service_id");
   if (rejectNonLabServiceId(OCM_SERVICE_ID) == null) failures.push("writer must reject OCM service_id");
+  if (rejectNonLabServiceId(MCT_SERVICE_ID) == null) failures.push("writer must reject MCT service_id");
   if (rejectNonLabServiceId(LAB_SERVICE_ID) != null) failures.push("writer must accept LAB service_id");
 
   const plant = scoreServiceAccount(labInput());

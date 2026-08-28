@@ -6,7 +6,8 @@
  * persisted current count equals 22. PET is CONFIGURED only when Wave-1
  * persisted current count equals 18. OCM is CONFIGURED only when Wave-1
  * persisted current count equals 25. LAB is CONFIGURED only when Wave-1
- * persisted current count equals 21. Other services stay NOT_CONFIGURED.
+ * persisted current count equals 21. MCT is CONFIGURED only when Wave-1
+ * persisted current count equals 26. Other services stay NOT_CONFIGURED.
  */
 import type { ServiceCode } from "./types";
 import { SERVICE_ELIGIBLE_INDUSTRIES } from "./eligibility";
@@ -18,6 +19,7 @@ import { INS_WAVE1_EXPECTED_COUNT } from "./ins-wave1-manifest";
 import { PET_WAVE1_EXPECTED_COUNT } from "./pet-wave1-manifest";
 import { OCM_WAVE1_EXPECTED_COUNT } from "./ocm-wave1-manifest";
 import { LAB_WAVE1_EXPECTED_COUNT } from "./lab-wave1-manifest";
+import { MCT_WAVE1_EXPECTED_COUNT } from "./mct-wave1-manifest";
 
 export const DEFAULT_SERVICE_CODE: ServiceCode = "PCH";
 
@@ -68,7 +70,8 @@ export function getCanonicalServiceDefinition(code: ServiceCode): CanonicalServi
       (code === "ENV" && personasForService("ENV").length > 0) ||
       (code === "INS" && personasForService("INS").length > 0) ||
       (code === "OCM" && personasForService("OCM").length > 0) ||
-      (code === "LAB" && personasForService("LAB").length > 0),
+      (code === "LAB" && personasForService("LAB").length > 0) ||
+      (code === "MCT" && personasForService("MCT").length > 0),
     eligibleIndustries: [...SERVICE_ELIGIBLE_INDUSTRIES[code]].sort(),
     positioning: SERVICE_PLAYBOOK[code].positioning,
     commercialWeights: COMMERCIAL_WEIGHTS,
@@ -93,6 +96,9 @@ export function serviceReadiness(code: ServiceCode, persistedCurrentCount = 0): 
   }
   if (code === "LAB") {
     return persistedCurrentCount === LAB_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
+  }
+  if (code === "MCT") {
+    return persistedCurrentCount === MCT_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
   }
   return "NOT_CONFIGURED";
 }
@@ -148,7 +154,8 @@ export function registerLiveServices(
           (code === "INS" && persisted === INS_WAVE1_EXPECTED_COUNT) ||
           (code === "PET" && persisted === PET_WAVE1_EXPECTED_COUNT) ||
           (code === "OCM" && persisted === OCM_WAVE1_EXPECTED_COUNT) ||
-          (code === "LAB" && persisted === LAB_WAVE1_EXPECTED_COUNT),
+          (code === "LAB" && persisted === LAB_WAVE1_EXPECTED_COUNT) ||
+          (code === "MCT" && persisted === MCT_WAVE1_EXPECTED_COUNT),
         personasApproved: def.personasApproved,
         scoringModelPresent: def.scoringModelPresent,
         personaCount: personasForService(code).length,
@@ -183,8 +190,9 @@ export function validateServiceRegistry(rows: LiveCatalogService[]): { ok: boole
   if (personasForService("INS").length !== 8) errors.push("INS must keep 8 Wave-1 personas.");
   if (personasForService("OCM").length !== 8) errors.push("OCM must keep 8 Wave-1 personas.");
   if (personasForService("LAB").length !== 8) errors.push("LAB must keep 8 Wave-1 personas.");
+  if (personasForService("MCT").length !== 8) errors.push("MCT must keep 8 Wave-1 personas.");
   for (const code of CANONICAL_SERVICE_CODES) {
-    if (code === "PCH" || code === "ENV" || code === "INS" || code === "PET" || code === "OCM" || code === "LAB") continue;
+    if (code === "PCH" || code === "ENV" || code === "INS" || code === "PET" || code === "OCM" || code === "LAB" || code === "MCT") continue;
     if (personasForService(code).length > 0) errors.push(`${code} personas were invented; keep empty until approved.`);
     if (getCanonicalServiceDefinition(code).persistenceApproved) {
       errors.push(`${code} must not be persistence-approved until independently validated.`);

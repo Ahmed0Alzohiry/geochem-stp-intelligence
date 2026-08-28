@@ -41,3 +41,10 @@ export {
   LAB_WAVE1_COMPANY_IDS,
   assertLabWave1ManifestIntegrity,
 } from "./lab-wave1-manifest";
+export {
+  MCT_SERVICE_ID,
+  MCT_WAVE1_EXPECTED_COUNT,
+  MCT_WAVE1_MANIFEST_VERSION,
+  MCT_WAVE1_COMPANY_IDS,
+  assertMctWave1ManifestIntegrity,
+} from "./mct-wave1-manifest";

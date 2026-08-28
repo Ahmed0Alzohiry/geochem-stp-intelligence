@@ -153,7 +153,7 @@ async function main() {
     env24: env === 24 && envIds.length === 24,
     ins22: ins === 22 && insIds.length === 22,
     pet18: pet === PET_WAVE1_EXPECTED_COUNT && rows.length === 18,
-    total414: total.count === 414,
+    total486: total.count === 486,
     noUnexpected: unexpected.length === 0,
     noMissing: missing.length === 0,
     noDup: !dup,

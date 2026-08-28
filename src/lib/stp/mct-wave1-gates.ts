@@ -1,40 +1,41 @@
 /**
- * LAB Wave-1 persist/rollback gates. Pure functions — no database I/O.
- * Never accepts PCH, ENV, INS, PET, or OCM service_ids. Persist requires --write on the LAB writer.
+ * MCT Wave-1 persist/rollback gates. Pure functions — no database I/O.
+ * Never accepts PCH, ENV, INS, PET, OCM, or LAB service_ids.
+ * Persist requires --write on the MCT writer. Do not pass --write in Step 32.6.3.
  */
 import type { CompanyServiceStpScoreInsert } from "./stp-persist-row";
 import { validateStpPayload } from "./stp-persist-row";
 import { ENV_SERVICE_ID, PCH_EXPECTED_CURRENT_COUNT, PCH_SERVICE_ID } from "./env-wave1-manifest";
 import { ENV_EXPECTED_CURRENT_COUNT, INS_SERVICE_ID, INS_WAVE1_EXPECTED_COUNT } from "./ins-wave1-manifest";
+import { LAB_SERVICE_ID, LAB_WAVE1_EXPECTED_COUNT } from "./lab-wave1-manifest";
 import { OCM_SERVICE_ID, OCM_WAVE1_EXPECTED_COUNT, PET_EXPECTED_CURRENT_COUNT } from "./ocm-wave1-manifest";
-import { MCT_SERVICE_ID } from "./mct-wave1-manifest";
 import { PET_SERVICE_ID } from "./pet-wave1-manifest";
 import {
-  LAB_PETRO_RABIGH_ER_GROUP_KEY,
-  LAB_PETRO_RABIGH_POLYMER_ID,
-  LAB_PETRO_RABIGH_REFINING_ID,
-  LAB_SERVICE_ID,
-  LAB_WAVE1_COMPANY_IDS,
-  LAB_WAVE1_EXPECTED_COUNT,
-  labWave1CompanyIdSet,
-} from "./lab-wave1-manifest";
+  MCT_PETRO_RABIGH_ER_GROUP_KEY,
+  MCT_PETRO_RABIGH_POLYMER_ID,
+  MCT_PETRO_RABIGH_REFINING_ID,
+  MCT_SERVICE_ID,
+  MCT_WAVE1_COMPANY_IDS,
+  MCT_WAVE1_EXPECTED_COUNT,
+  mctWave1CompanyIdSet,
+} from "./mct-wave1-manifest";
 
-export type LabPersistPlanAction = "insert" | "noop" | "rollback" | "abort";
+export type MctPersistPlanAction = "insert" | "noop" | "rollback" | "abort";
 
-export type LabWave1GateResult = {
+export type MctWave1GateResult = {
   ok: boolean;
-  action: LabPersistPlanAction;
+  action: MctPersistPlanAction;
   errors: string[];
 };
 
-export function rejectNonLabServiceId(serviceId: string): string | null {
-  if (serviceId === PCH_SERVICE_ID) return "LAB writer rejected PCH service_id.";
-  if (serviceId === ENV_SERVICE_ID) return "LAB writer rejected ENV service_id.";
-  if (serviceId === INS_SERVICE_ID) return "LAB writer rejected INS service_id.";
-  if (serviceId === PET_SERVICE_ID) return "LAB writer rejected PET service_id.";
-  if (serviceId === OCM_SERVICE_ID) return "LAB writer rejected OCM service_id.";
-  if (serviceId === MCT_SERVICE_ID) return "LAB writer rejected MCT service_id.";
-  if (serviceId !== LAB_SERVICE_ID) return `LAB writer rejected non-LAB service_id ${serviceId}.`;
+export function rejectNonMctServiceId(serviceId: string): string | null {
+  if (serviceId === PCH_SERVICE_ID) return "MCT writer rejected PCH service_id.";
+  if (serviceId === ENV_SERVICE_ID) return "MCT writer rejected ENV service_id.";
+  if (serviceId === INS_SERVICE_ID) return "MCT writer rejected INS service_id.";
+  if (serviceId === PET_SERVICE_ID) return "MCT writer rejected PET service_id.";
+  if (serviceId === OCM_SERVICE_ID) return "MCT writer rejected OCM service_id.";
+  if (serviceId === LAB_SERVICE_ID) return "MCT writer rejected LAB service_id.";
+  if (serviceId !== MCT_SERVICE_ID) return `MCT writer rejected non-MCT service_id ${serviceId}.`;
   return null;
 }
 
@@ -73,18 +74,25 @@ export function assertOcmProtected(ocmCurrentCount: number | null): string | nul
   return null;
 }
 
-export function validateLabWave1Payload(rows: CompanyServiceStpScoreInsert[]): LabWave1GateResult {
-  const errors: string[] = [];
-  const approved = labWave1CompanyIdSet();
+export function assertLabProtected(labCurrentCount: number | null): string | null {
+  if (labCurrentCount !== LAB_WAVE1_EXPECTED_COUNT) {
+    return `LAB protection abort: current count ${labCurrentCount} !== ${LAB_WAVE1_EXPECTED_COUNT}.`;
+  }
+  return null;
+}
 
-  if (rows.length !== LAB_WAVE1_EXPECTED_COUNT) {
-    errors.push(`Expected LAB Wave-1 count ${LAB_WAVE1_EXPECTED_COUNT}, got ${rows.length}.`);
+export function validateMctWave1Payload(rows: CompanyServiceStpScoreInsert[]): MctWave1GateResult {
+  const errors: string[] = [];
+  const approved = mctWave1CompanyIdSet();
+
+  if (rows.length !== MCT_WAVE1_EXPECTED_COUNT) {
+    errors.push(`Expected MCT Wave-1 count ${MCT_WAVE1_EXPECTED_COUNT}, got ${rows.length}.`);
   }
 
   for (const row of rows) {
-    const rejected = rejectNonLabServiceId(row.service_id);
+    const rejected = rejectNonMctServiceId(row.service_id);
     if (rejected) errors.push(rejected);
-    if (!approved.has(row.company_id)) errors.push(`Unexpected LAB company ${row.company_id}.`);
+    if (!approved.has(row.company_id)) errors.push(`Unexpected MCT company ${row.company_id}.`);
     if (row.commercial_score == null) errors.push(`Missing score for ${row.company_id}.`);
     if (row.tier == null) errors.push(`Missing tier for ${row.company_id}.`);
     if (row.application_fit == null) errors.push(`Missing application_fit for ${row.company_id}.`);
@@ -99,30 +107,30 @@ export function validateLabWave1Payload(rows: CompanyServiceStpScoreInsert[]): L
       errors.push(`RELATED/REVIEW is not allowed for ${row.company_id}.`);
     }
     if (
-      (row.company_id === LAB_PETRO_RABIGH_POLYMER_ID || row.company_id === LAB_PETRO_RABIGH_REFINING_ID) &&
-      row.account_group_key === LAB_PETRO_RABIGH_ER_GROUP_KEY
+      (row.company_id === MCT_PETRO_RABIGH_POLYMER_ID || row.company_id === MCT_PETRO_RABIGH_REFINING_ID) &&
+      row.account_group_key === MCT_PETRO_RABIGH_ER_GROUP_KEY
     ) {
       errors.push(
-        `Petro Rabigh plant ${row.company_id} must use a facility-scoped LAB group key so both plants can persist.`,
+        `Petro Rabigh plant ${row.company_id} must use a facility-scoped MCT group key so both plants can persist.`,
       );
     }
   }
 
   const payloadIds = rows.map((row) => row.company_id);
   const unique = new Set(payloadIds);
-  if (unique.size !== payloadIds.length) errors.push("Duplicate company_id + service_id in LAB payload.");
-  if (payloadIds.join(",") !== LAB_WAVE1_COMPANY_IDS.join(",")) {
-    errors.push("LAB payload order must match frozen Wave-1 rank order.");
+  if (unique.size !== payloadIds.length) errors.push("Duplicate company_id + service_id in MCT payload.");
+  if (payloadIds.join(",") !== MCT_WAVE1_COMPANY_IDS.join(",")) {
+    errors.push("MCT payload order must match frozen Wave-1 rank order.");
   }
 
-  for (const companyId of LAB_WAVE1_COMPANY_IDS) {
-    if (!unique.has(companyId)) errors.push(`Missing approved LAB company ${companyId}.`);
+  for (const companyId of MCT_WAVE1_COMPANY_IDS) {
+    if (!unique.has(companyId)) errors.push(`Missing approved MCT company ${companyId}.`);
   }
 
   const groups = rows.map((row) => row.account_group_key);
-  if (new Set(groups).size !== groups.length) errors.push("Duplicate account_group_key in LAB Wave-1 payload.");
+  if (new Set(groups).size !== groups.length) errors.push("Duplicate account_group_key in MCT Wave-1 payload.");
 
-  const schema = validateStpPayload(rows, LAB_SERVICE_ID);
+  const schema = validateStpPayload(rows, MCT_SERVICE_ID);
   if (!schema.schemaValid) {
     errors.push(...schema.issues.map((issue) => `${issue.field}: ${issue.detail}`));
   }
@@ -136,16 +144,17 @@ export function validateLabWave1Payload(rows: CompanyServiceStpScoreInsert[]): L
   };
 }
 
-export function planLabWave1Persist(opts: {
+export function planMctWave1Persist(opts: {
   pchCurrentCount: number | null;
   envCurrentCount: number | null;
   insCurrentCount: number | null;
   petCurrentCount: number | null;
   ocmCurrentCount: number | null;
   labCurrentCount: number | null;
-  labCurrentCompanyIds: string[];
+  mctCurrentCount: number | null;
+  mctCurrentCompanyIds: string[];
   payload: CompanyServiceStpScoreInsert[];
-}): LabWave1GateResult {
+}): MctWave1GateResult {
   const errors: string[] = [];
   const pch = assertPchProtected(opts.pchCurrentCount);
   if (pch) errors.push(pch);
@@ -157,51 +166,54 @@ export function planLabWave1Persist(opts: {
   if (pet) errors.push(pet);
   const ocm = assertOcmProtected(opts.ocmCurrentCount);
   if (ocm) errors.push(ocm);
+  const lab = assertLabProtected(opts.labCurrentCount);
+  if (lab) errors.push(lab);
 
-  const payloadCheck = validateLabWave1Payload(opts.payload);
+  const payloadCheck = validateMctWave1Payload(opts.payload);
   if (!payloadCheck.ok) errors.push(...payloadCheck.errors);
 
-  const labIds = [...new Set(opts.labCurrentCompanyIds)];
-  const approved = labWave1CompanyIdSet();
-  if (labIds.some((id) => !approved.has(id))) {
-    errors.push("Existing LAB current rows include unexpected companies.");
+  const mctIds = [...new Set(opts.mctCurrentCompanyIds)];
+  const approved = mctWave1CompanyIdSet();
+  if (mctIds.some((id) => !approved.has(id))) {
+    errors.push("Existing MCT current rows include unexpected companies.");
   }
 
   if (errors.length > 0) {
     return { ok: false, action: "abort", errors: [...new Set(errors)] };
   }
 
-  if (opts.labCurrentCount === LAB_WAVE1_EXPECTED_COUNT && labIds.length === LAB_WAVE1_EXPECTED_COUNT) {
-    const missing = LAB_WAVE1_COMPANY_IDS.filter((id) => !labIds.includes(id));
+  if (opts.mctCurrentCount === MCT_WAVE1_EXPECTED_COUNT && mctIds.length === MCT_WAVE1_EXPECTED_COUNT) {
+    const missing = MCT_WAVE1_COMPANY_IDS.filter((id) => !mctIds.includes(id));
     if (missing.length === 0) {
       return { ok: true, action: "noop", errors: [] };
     }
     return {
       ok: false,
       action: "abort",
-      errors: [`LAB current count is ${LAB_WAVE1_EXPECTED_COUNT} but missing approved ids: ${missing.join(", ")}`],
+      errors: [`MCT current count is ${MCT_WAVE1_EXPECTED_COUNT} but missing approved ids: ${missing.join(", ")}`],
     };
   }
 
-  if ((opts.labCurrentCount ?? 0) > 0) {
+  if ((opts.mctCurrentCount ?? 0) > 0) {
     return {
       ok: false,
       action: "abort",
-      errors: [`LAB current count ${opts.labCurrentCount} is not 0 or ${LAB_WAVE1_EXPECTED_COUNT}; refuse to write.`],
+      errors: [`MCT current count ${opts.mctCurrentCount} is not 0 or ${MCT_WAVE1_EXPECTED_COUNT}; refuse to write.`],
     };
   }
 
   return { ok: true, action: "insert", errors: [] };
 }
 
-export function planLabWave1Rollback(opts: {
+export function planMctWave1Rollback(opts: {
   pchCurrentCount: number | null;
   envCurrentCount: number | null;
   insCurrentCount: number | null;
   petCurrentCount: number | null;
   ocmCurrentCount: number | null;
-  labCurrentCompanyIds: string[];
-}): LabWave1GateResult {
+  labCurrentCount: number | null;
+  mctCurrentCompanyIds: string[];
+}): MctWave1GateResult {
   const errors: string[] = [];
   const pch = assertPchProtected(opts.pchCurrentCount);
   if (pch) errors.push(pch);
@@ -213,9 +225,11 @@ export function planLabWave1Rollback(opts: {
   if (pet) errors.push(pet);
   const ocm = assertOcmProtected(opts.ocmCurrentCount);
   if (ocm) errors.push(ocm);
-  const approved = labWave1CompanyIdSet();
-  if (opts.labCurrentCompanyIds.some((id) => !approved.has(id))) {
-    errors.push("Rollback abort: LAB current rows include companies outside Wave-1.");
+  const lab = assertLabProtected(opts.labCurrentCount);
+  if (lab) errors.push(lab);
+  const approved = mctWave1CompanyIdSet();
+  if (opts.mctCurrentCompanyIds.some((id) => !approved.has(id))) {
+    errors.push("Rollback abort: MCT current rows include companies outside Wave-1.");
   }
   if (errors.length > 0) return { ok: false, action: "abort", errors };
   return { ok: true, action: "rollback", errors: [] };

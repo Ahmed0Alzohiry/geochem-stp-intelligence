@@ -1,4 +1,5 @@
 import {
+  classifyMctApplication,
   decideEligibility,
   hasLabApplicationEvidence,
   hasOcmApplicationEvidence,
@@ -53,11 +54,12 @@ const INDUSTRY_STRENGTH: Record<ServiceCode, Record<string, number>> = {
   },
   MCT: {
     "Oil & Gas": 90,
-    Refining: 92,
-    Petrochemicals: 88,
-    "Power & Utilities": 84,
+    Refining: 98,
+    Petrochemicals: 90,
+    Chemicals: 82,
+    "Power & Utilities": 86,
     "Water & Wastewater": 80,
-    "Mining & Minerals": 78,
+    "Marine / Ports": 94,
   },
   INS: {
     "Oil & Gas": 90,
@@ -153,6 +155,19 @@ function scoreSubsector(input: ServiceFirstInput): DimensionResult {
       "KNOWN",
       48,
       `Subsector "${subsector}" is in a LAB industry but is not plant/product-testing evidence.`,
+    );
+  }
+  if (input.serviceCode === "MCT") {
+    const mct = classifyMctApplication(input.companyName, subsector);
+    if (mct.cls !== "none") {
+      return dim("subsectorFit", "KNOWN", mct.score, mct.label);
+    }
+    if (!subsector) return dim("subsectorFit", "UNKNOWN", null, "Subsector is missing; not inferred from industry.");
+    return dim(
+      "subsectorFit",
+      "KNOWN",
+      48,
+      `Subsector "${subsector}" is in an MCT industry but is not metering/calibration/topography buying evidence.`,
     );
   }
   if (!subsector) return dim("subsectorFit", "UNKNOWN", null, "Subsector is missing; not inferred from industry.");

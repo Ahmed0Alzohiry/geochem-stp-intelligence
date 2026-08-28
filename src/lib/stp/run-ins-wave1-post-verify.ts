@@ -135,7 +135,7 @@ async function main() {
     pch350: pch === 350 && pchIds.length === 350 && new Set(pchIds).size === 350,
     env24: env === 24 && envIds.length === 24,
     ins22: ins === INS_WAVE1_EXPECTED_COUNT,
-    total396: total.count === 396,
+    total486: total.count === 486,
     noUnexpected: unexpected.length === 0,
     noMissing: missing.length === 0,
     noDup: !dup,

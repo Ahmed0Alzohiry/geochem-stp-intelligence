@@ -63,8 +63,12 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
   if (serviceReadiness("LAB", 21) !== "CONFIGURED") failures.push("LAB must be CONFIGURED when persisted count is 21");
   if (serviceReadiness("LAB", 20) !== "NOT_CONFIGURED") failures.push("LAB must not be CONFIGURED at count 20");
   if (personasForService("LAB").length !== 8) failures.push("LAB must keep 8 Wave-1 personas");
+  if (serviceReadiness("MCT") !== "NOT_CONFIGURED") failures.push("MCT must stay NOT_CONFIGURED until 26 Wave-1 rows persist");
+  if (serviceReadiness("MCT", 26) !== "CONFIGURED") failures.push("MCT must be CONFIGURED when persisted count is 26");
+  if (serviceReadiness("MCT", 25) !== "NOT_CONFIGURED") failures.push("MCT must not be CONFIGURED at count 25");
+  if (personasForService("MCT").length !== 8) failures.push("MCT must keep 8 Wave-1 personas");
   for (const code of CANONICAL_SERVICE_CODES) {
-    if (code === "PCH" || code === "ENV" || code === "INS" || code === "PET" || code === "OCM" || code === "LAB") continue;
+    if (code === "PCH" || code === "ENV" || code === "INS" || code === "PET" || code === "OCM" || code === "LAB" || code === "MCT") continue;
     if (serviceReadiness(code) !== "NOT_CONFIGURED") failures.push(`${code} must stay NOT_CONFIGURED until validated`);
     if (getCanonicalServiceDefinition(code).persistenceApproved) failures.push(`${code} persistence must not be approved`);
   }
@@ -80,14 +84,18 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
   const min = scoreServiceAccount(base("MIN"));
   const ocm = scoreServiceAccount(base("OCM"));
   const lab = scoreServiceAccount(base("LAB"));
+  const mct = scoreServiceAccount(base("MCT"));
   if (pch.serviceCode !== "PCH" || pet.serviceCode !== "PET") failures.push("scores must keep their serviceCode");
   if (pch.eligibility !== "ELIGIBLE") failures.push("PCH petrochemicals should be eligible");
   if (ocm.eligibility !== "ELIGIBLE") failures.push("OCM polymer/polyethylene plant should be eligible");
   if (lab.eligibility !== "ELIGIBLE") failures.push("LAB polymer/polyethylene plant should be eligible");
+  if (mct.eligibility !== "ELIGIBLE") failures.push("MCT polymer/polyethylene plant should be eligible");
   const ocmMed = scoreServiceAccount({ ...base("OCM"), verifiedCities: [], importedCity: "Jubail" });
   if (ocmMed.tier === "Tier 1") failures.push("OCM must not force Tier 1 when geography is unknown");
   const labMed = scoreServiceAccount({ ...base("LAB"), verifiedCities: [], importedCity: "Jubail" });
   if (labMed.tier === "Tier 1") failures.push("LAB must not force Tier 1 when geography is unknown");
+  const mctMed = scoreServiceAccount({ ...base("MCT"), verifiedCities: [], importedCity: "Jubail" });
+  if (mctMed.tier === "Tier 1") failures.push("MCT must not force Tier 1 when geography is unknown");
   const labOffice = scoreServiceAccount({
     ...base("LAB"),
     companyName: "Generic Industrial Office",
@@ -95,6 +103,13 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
     subsector: "Corporate headquarters",
   });
   if (labOffice.eligibility !== "OUT_OF_SCOPE") failures.push("LAB must not treat industry-only offices as eligible");
+  const mctOffice = scoreServiceAccount({
+    ...base("MCT"),
+    companyName: "Generic Industrial Office",
+    industry: "Industrial Manufacturing",
+    subsector: "Corporate headquarters",
+  });
+  if (mctOffice.eligibility !== "OUT_OF_SCOPE") failures.push("MCT must not treat industry-only offices as eligible");
   if (min.eligibility !== "OUT_OF_SCOPE") failures.push("MIN must not treat petrochemicals as eligible");
   if (pch.commercialScore === pet.commercialScore && pch.dimensions[0].rawScore === pet.dimensions[0].rawScore) {
     failures.push("PCH and PET industry fit should not be identical for this hypothetical");

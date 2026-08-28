@@ -22,7 +22,7 @@ import { getStpAccountDetail, getStpCurrentForService } from "../supabase/stp-cu
 import { isLabCompetitorName } from "./eligibility";
 
 const PCH_RANK1 = "bcb70c34-0c5e-4316-8f64-d4e3fb1d45fe";
-const TOTAL_AFTER_LAB = 350 + 24 + 22 + 18 + 25 + 21;
+const TOTAL_AFTER_LAB = 350 + 24 + 22 + 18 + 25 + 21 + 26;
 
 function timedClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -180,7 +180,7 @@ async function main() {
     pet18: pet === 18 && petIds.length === 18,
     ocm25: ocm === 25 && ocmIds.length === 25,
     lab21: lab === LAB_WAVE1_EXPECTED_COUNT && rows.length === 21,
-    total460: total.count === TOTAL_AFTER_LAB,
+    total486: total.count === TOTAL_AFTER_LAB,
     noUnexpected: unexpected.length === 0,
     noMissing: missing.length === 0,
     noDup: !dup,

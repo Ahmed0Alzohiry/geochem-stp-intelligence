@@ -37,9 +37,10 @@ export const SERVICE_PLAYBOOK: Record<ServiceCode, PositioningPlaybook> = {
     departments: ["Reliability", "Maintenance", "Laboratory"],
   },
   MCT: {
-    positioning: "GEOCHEM metering, calibration, and related measurement support for industrial and hydrocarbon sites.",
-    contactRoles: ["Technical", "Procurement"],
-    departments: ["Engineering", "Inspection", "Projects"],
+    positioning:
+      "GEOCHEM metering, calibration, and measurement-assurance support for custody transfer, flow/tank measurement, and process instrumentation — topography only when a plant/site survey requirement is evidenced.",
+    contactRoles: ["Technical", "Procurement", "Influencer"],
+    departments: ["Engineering", "Inspection", "Laboratory", "Maintenance"],
   },
   INS: {
     positioning: "GEOCHEM industrial inspection programs for plants, pipelines, and integrity-critical assets.",
@@ -64,6 +65,9 @@ export function positioningForUseCase(serviceCode: ServiceCode, companyName: str
   }
   if (serviceCode === "LAB" && useCase.trim()) {
     return `For ${companyName}: GEOCHEM laboratory and testing services for ${useCase}.`;
+  }
+  if (serviceCode === "MCT" && useCase.trim()) {
+    return `For ${companyName}: GEOCHEM metering and calibration support for ${useCase}.`;
   }
   return positioningFor(serviceCode, companyName);
 }
