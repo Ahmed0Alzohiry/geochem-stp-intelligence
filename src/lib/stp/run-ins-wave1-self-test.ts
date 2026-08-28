@@ -153,6 +153,8 @@ export function runInsWave1SelfTest(): { ok: boolean; failures: string[] } {
   if (serviceReadiness("ENV", 24) !== "CONFIGURED") failures.push("ENV readiness at count 24");
   if (serviceReadiness("INS") !== "NOT_CONFIGURED") failures.push("INS readiness at count 0");
   if (serviceReadiness("INS", 22) !== "CONFIGURED") failures.push("INS readiness at count 22");
+  if (serviceReadiness("PET") !== "NOT_CONFIGURED") failures.push("PET readiness at count 0");
+  if (serviceReadiness("PET", 18) !== "CONFIGURED") failures.push("PET readiness at count 18");
 
   return { ok: failures.length === 0, failures };
 }

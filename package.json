@@ -13,7 +13,9 @@
     "stp:env-wave1-self-test": "npx tsx src/lib/stp/run-env-wave1-self-test.ts",
     "stp:env-wave1-dry-run": "npx tsx src/lib/stp/run-env-wave1-persist.ts",
     "stp:ins-wave1-self-test": "npx tsx src/lib/stp/run-ins-wave1-self-test.ts",
-    "stp:ins-wave1-dry-run": "npx tsx src/lib/stp/run-ins-wave1-persist.ts"
+    "stp:ins-wave1-dry-run": "npx tsx src/lib/stp/run-ins-wave1-persist.ts",
+    "stp:pet-wave1-self-test": "npx tsx src/lib/stp/run-pet-wave1-self-test.ts",
+    "stp:pet-wave1-dry-run": "npx tsx --env-file=.env.local src/lib/stp/run-pet-wave1-persist.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

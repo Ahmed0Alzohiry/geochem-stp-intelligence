@@ -3,7 +3,8 @@
  * Live catalog rows come from public.services. Do not invent services.
  * PCH remains persistence-approved. ENV is CONFIGURED only when Wave-1
  * persisted current count equals 24. INS is CONFIGURED only when Wave-1
- * persisted current count equals 22. Other services stay NOT_CONFIGURED.
+ * persisted current count equals 22. PET is CONFIGURED only when Wave-1
+ * persisted current count equals 18. Other services stay NOT_CONFIGURED.
  */
 import type { ServiceCode } from "./types";
 import { SERVICE_ELIGIBLE_INDUSTRIES } from "./eligibility";
@@ -12,6 +13,7 @@ import { COMMERCIAL_WEIGHTS, TIER_THRESHOLDS, KNOWN_WEIGHT_FLOOR } from "./weigh
 import { personasForService } from "../contacts/service-persona-map";
 import { ENV_WAVE1_EXPECTED_COUNT } from "./env-wave1-manifest";
 import { INS_WAVE1_EXPECTED_COUNT } from "./ins-wave1-manifest";
+import { PET_WAVE1_EXPECTED_COUNT } from "./pet-wave1-manifest";
 
 export const DEFAULT_SERVICE_CODE: ServiceCode = "PCH";
 
@@ -77,6 +79,9 @@ export function serviceReadiness(code: ServiceCode, persistedCurrentCount = 0): 
   if (code === "INS") {
     return persistedCurrentCount === INS_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
   }
+  if (code === "PET") {
+    return persistedCurrentCount === PET_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
+  }
   return "NOT_CONFIGURED";
 }
 
@@ -128,7 +133,8 @@ export function registerLiveServices(
         persistenceApproved:
           def.persistenceApproved ||
           (code === "ENV" && persisted === ENV_WAVE1_EXPECTED_COUNT) ||
-          (code === "INS" && persisted === INS_WAVE1_EXPECTED_COUNT),
+          (code === "INS" && persisted === INS_WAVE1_EXPECTED_COUNT) ||
+          (code === "PET" && persisted === PET_WAVE1_EXPECTED_COUNT),
         personasApproved: def.personasApproved,
         scoringModelPresent: def.scoringModelPresent,
         personaCount: personasForService(code).length,

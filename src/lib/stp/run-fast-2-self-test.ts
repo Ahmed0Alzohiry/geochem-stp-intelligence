@@ -50,7 +50,10 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
   if (serviceReadiness("INS") !== "NOT_CONFIGURED") failures.push("INS must stay NOT_CONFIGURED until 22 Wave-1 rows persist");
   if (serviceReadiness("INS", 22) !== "CONFIGURED") failures.push("INS must be CONFIGURED when persisted count is 22");
   if (serviceReadiness("INS", 21) !== "NOT_CONFIGURED") failures.push("INS must not be CONFIGURED at count 21");
-  if (serviceReadiness("PET", 100) !== "NOT_CONFIGURED") failures.push("PET must stay NOT_CONFIGURED even with rows");
+  if (serviceReadiness("PET") !== "NOT_CONFIGURED") failures.push("PET must stay NOT_CONFIGURED until 18 Wave-1 rows persist");
+  if (serviceReadiness("PET", 18) !== "CONFIGURED") failures.push("PET must be CONFIGURED when persisted count is 18");
+  if (serviceReadiness("PET", 17) !== "NOT_CONFIGURED") failures.push("PET must not be CONFIGURED at count 17");
+  if (serviceReadiness("PET", 100) !== "NOT_CONFIGURED") failures.push("PET must stay NOT_CONFIGURED at count 100");
   for (const code of CANONICAL_SERVICE_CODES) {
     if (code === "PCH" || code === "ENV" || code === "INS") continue;
     if (serviceReadiness(code) !== "NOT_CONFIGURED") failures.push(`${code} must stay NOT_CONFIGURED until validated`);

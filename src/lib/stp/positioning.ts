@@ -9,9 +9,9 @@ export type PositioningPlaybook = {
 export const SERVICE_PLAYBOOK: Record<ServiceCode, PositioningPlaybook> = {
   PET: {
     positioning:
-      "GEOCHEM petroleum geochemistry and reservoir-fluid support for hydrocarbon producing and processing operations.",
+      "GEOCHEM petroleum inspection and testing: quantity and quality inspection, cargo and ship/shore verification, sampling, tank/terminal measurement, custody transfer, and loss control.",
     contactRoles: ["Technical", "Decision Maker"],
-    departments: ["Laboratory", "Engineering", "Projects"],
+    departments: ["Inspection", "Laboratory", "Engineering"],
   },
   PCH: {
     positioning:

@@ -27,7 +27,7 @@ const HEAVY_INDUSTRIAL = new Set([
 ]);
 
 export const SERVICE_ELIGIBLE_INDUSTRIES: Record<ServiceCode, Set<string>> = {
-  PET: CORE_OIL,
+  PET: new Set([...CORE_OIL, "Marine / Ports"]),
   PCH: new Set([...CHEM, "Oil & Gas"]),
   MIN: MINING,
   ENV: ENV_INDUSTRIES,
@@ -38,7 +38,7 @@ export const SERVICE_ELIGIBLE_INDUSTRIES: Record<ServiceCode, Set<string>> = {
 };
 
 const APPLICATION: Record<ServiceCode, RegExp> = {
-  PET: /refin|petrochem|oilfield|drilling|reservoir|wellsite|geophysic|seismic|crude|upstream|midstream|downstream|gas process/i,
+  PET: /refin|petrochem|petroleum terminal|oil terminal|tank farm|bulk plant|bunker|marine fuel|custody|ship.?shore|fuel distribution|aviation fuel|base oil|petroleum product|crude|midstream|downstream|luberef|satorp|sasref|samref|yasref/i,
   PCH: /petrochem|polymer|polyethylene|polypropylene|polyolefin|polycarbonate|ethylene|glycol|catalyst|methanol|elastomer|synthetic rubber|alkyl benzene|industrial fiber|amine|olefin|cracker|aromatic|mtbe|refin|crude|downstream|midstream|upstream|oilfield|gas process|hydrocarbon|feedstock|assay|process chemistry|product quality|reservoir|wellsite/i,
   MIN: /mine|mineral|ore|phosphate|bauxite|gold|copper|smelt|cement|industrial mineral/i,
   ENV: /wastewater|desal|environmental|effluent|soil|groundwater|produced water|hse|emission/i,

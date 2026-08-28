@@ -22,7 +22,7 @@ const WESTERN_VERIFIED = new Set(["Yanbu", "Jeddah", "Rabigh"]);
 const OTHER_INDUSTRIAL = /jubail|dammam|khobar|ras tanura|ras al khair|dhahran|jazan|yanbu|jeddah|rabigh/i;
 
 const INDUSTRY_STRENGTH: Record<ServiceCode, Record<string, number>> = {
-  PET: { "Oil & Gas": 100, Refining: 90, Petrochemicals: 78 },
+  PET: { "Oil & Gas": 100, Refining: 90, Petrochemicals: 78, "Marine / Ports": 88 },
   PCH: { Petrochemicals: 100, Refining: 88, "Oil & Gas": 78, Chemicals: 72 },
   MIN: { "Mining & Minerals": 100 },
   ENV: {

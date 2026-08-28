@@ -59,7 +59,7 @@ export const regions: Region[] = [
 ];
 
 export const services: Service[] = [
-  { id: "svc-petroleum", name: "Petroleum Services", serviceCode: "PET", description: "Petroleum geochemistry, reservoir fluids, and wellsite geochemistry support.", active: true },
+  { id: "svc-petroleum", name: "Petroleum Services", serviceCode: "PET", description: "Petroleum inspection and testing: quantity/quality, cargo, ship/shore, sampling, tank/terminal measurement, custody transfer, and loss control.", active: true },
   { id: "svc-petrochemical", name: "Petrochemical Services", serviceCode: "PCH", description: "Process chemistry, product quality, and petrochemical plant laboratory support.", active: true },
   { id: "svc-minerals", name: "Minerals & Agriculture", serviceCode: "MIN", description: "Ores, minerals, and agricultural material analysis.", active: true },
   { id: "svc-environmental", name: "Environmental Services", serviceCode: "ENV", description: "Soil, water, wastewater, and environmental compliance testing.", active: true },

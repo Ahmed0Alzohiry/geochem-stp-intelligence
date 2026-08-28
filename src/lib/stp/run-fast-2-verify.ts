@@ -87,15 +87,19 @@ async function main() {
     pchNoDuplicateCurrent: pchKeys.length === 350 && new Set(pchKeys).size === 350,
     pchRank1: pchList.rows[0]?.companyId === PCH_RANK1_COMPANY,
     pchReadiness: pchList.readiness === "CONFIGURED",
-    petEmpty: petList.total === 0 && petList.readiness === "NOT_CONFIGURED",
+    petWave1: petList.total === 18 && petList.readiness === "CONFIGURED",
+    petOnlyPetService: petList.rows.every((row) => row.serviceId !== PCH_SERVICE_ID && row.serviceCode === "PET"),
     noCrossPchInPet: petList.rows.every((row) => row.serviceId !== PCH_SERVICE_ID),
     contacts1: contactRows.length === 1 && contactRows[0]?.id === PCH_CONTACT_ID,
     relevancePchOnly: relRows.length === 1 && relRows[0]?.service_id === PCH_SERVICE_ID,
     opportunitiesZero: (opportunities.count ?? 0) === 0,
     noDemoOpportunities: (demoOpps.count ?? 0) === 0,
     otherServicesNoPersist: perService
-      .filter((row) => row.service !== "PCH" && row.service !== "ENV" && row.service !== "INS")
+      .filter((row) => row.service !== "PCH" && row.service !== "ENV" && row.service !== "INS" && row.service !== "PET")
       .every((row) => row.currentStp === 0 && row.scoreRows === 0),
+    petNotPersistedOrWave1: perService
+      .filter((row) => row.service === "PET")
+      .every((row) => row.currentStp === 0 || row.currentStp === 18),
     envNotPersistedOrWave1: perService
       .filter((row) => row.service === "ENV")
       .every((row) => row.currentStp === 0 || row.currentStp === 24),
