@@ -31,8 +31,9 @@ export const SERVICE_PLAYBOOK: Record<ServiceCode, PositioningPlaybook> = {
     departments: ["Environment", "HSE", "Laboratory"],
   },
   OCM: {
-    positioning: "GEOCHEM oil condition monitoring for rotating equipment reliability and lubricant programs.",
-    contactRoles: ["Technical", "Influencer"],
+    positioning:
+      "GEOCHEM oil analysis and condition-monitoring support for rotating equipment, lubricant health, contamination, wear detection, and predictive maintenance.",
+    contactRoles: ["Technical", "Influencer", "Decision Maker"],
     departments: ["Reliability", "Maintenance", "Laboratory"],
   },
   MCT: {
@@ -54,4 +55,11 @@ export const SERVICE_PLAYBOOK: Record<ServiceCode, PositioningPlaybook> = {
 
 export function positioningFor(serviceCode: ServiceCode, companyName: string): string {
   return `For ${companyName}: ${SERVICE_PLAYBOOK[serviceCode].positioning}`;
+}
+
+export function positioningForUseCase(serviceCode: ServiceCode, companyName: string, useCase: string): string {
+  if (serviceCode === "OCM" && useCase.trim()) {
+    return `For ${companyName}: GEOCHEM oil analysis and condition-monitoring support for ${useCase}.`;
+  }
+  return positioningFor(serviceCode, companyName);
 }

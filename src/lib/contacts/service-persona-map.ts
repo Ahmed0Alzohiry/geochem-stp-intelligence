@@ -261,12 +261,80 @@ export const INS_CONTACT_PERSONAS: ServiceContactPersona[] = [
   }),
 ];
 
+/** OCM Wave-1 personas. Not people. Not contact rows. Catalog has no Lubrication department. */
+export const OCM_CONTACT_PERSONAS: ServiceContactPersona[] = [
+  persona("OCM", {
+    departmentName: "Reliability",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 100,
+    relevanceReason: "Reliability / condition-monitoring owners specify used-oil, wear-metal, and predictive-maintenance programs.",
+  }),
+  persona("OCM", {
+    departmentName: "Maintenance",
+    jobFunctionCode: "operations",
+    buyingRole: "USER",
+    priority: 1,
+    relevanceScore: 96,
+    relevanceReason: "Maintenance and lubrication crews sample oil, act on results, and own circulating lube systems. No Lubrication department in the catalog.",
+  }),
+  persona("OCM", {
+    departmentName: "Laboratory",
+    jobFunctionCode: "laboratory",
+    buyingRole: "TECHNICAL",
+    priority: 1,
+    relevanceScore: 90,
+    relevanceReason: "Site labs receive oil-analysis results and may run complementary in-house screens.",
+  }),
+  persona("OCM", {
+    departmentName: "Engineering",
+    jobFunctionCode: "technical_services",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 84,
+    relevanceReason: "Mechanical/rotating-equipment engineers interpret wear trends and set oil-program specs.",
+  }),
+  persona("OCM", {
+    departmentName: "QA/QC",
+    jobFunctionCode: "quality",
+    buyingRole: "TECHNICAL",
+    priority: 2,
+    relevanceScore: 74,
+    relevanceReason: "Quality counterparts approve oil-test methods and vendor lab accreditation adjacent to OCM.",
+  }),
+  persona("OCM", {
+    departmentName: "Procurement",
+    jobFunctionCode: "procurement",
+    buyingRole: "PROCUREMENT",
+    priority: 1,
+    relevanceScore: 88,
+    relevanceReason: "Vendor selection and PO ownership for contracted oil-analysis programs.",
+  }),
+  persona("OCM", {
+    departmentName: "Procurement",
+    jobFunctionCode: "contracts",
+    buyingRole: "PROCUREMENT",
+    priority: 2,
+    relevanceScore: 76,
+    relevanceReason: "Frame agreements for condition-monitoring labs sit with procurement/contracts counterparts.",
+  }),
+  persona("OCM", {
+    departmentName: "Reliability",
+    jobFunctionCode: "commercial",
+    buyingRole: "GATEKEEPER",
+    priority: 3,
+    relevanceScore: 70,
+    relevanceReason: "Approved-vendor gatekeeping for oil-analysis contractors. No Commercial department in the catalog.",
+  }),
+];
+
 export const SERVICE_CONTACT_PERSONAS: Record<ServiceCode, ServiceContactPersona[]> = {
   PCH: PCH_CONTACT_PERSONAS,
   PET: [],
   MIN: [],
   ENV: ENV_CONTACT_PERSONAS,
-  OCM: [],
+  OCM: OCM_CONTACT_PERSONAS,
   MCT: [],
   INS: INS_CONTACT_PERSONAS,
   LAB: [],
@@ -342,6 +410,28 @@ export function validateServicePersonaMap(): { ok: boolean; errors: string[] } {
   if (!ins.some((row) => row.jobFunctionCode === "quality")) errors.push("INS missing QA/QC persona.");
   if (!ins.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
     errors.push("INS missing procurement persona.");
+  }
+
+  const ocm = SERVICE_CONTACT_PERSONAS.OCM;
+  if (ocm.length !== 8) errors.push("OCM must keep 8 Wave-1 personas.");
+  const ocmKeys = new Set<string>();
+  for (const row of ocm) {
+    if (row.serviceCode !== "OCM") errors.push("OCM persona has the wrong serviceCode.");
+    if (!depts.has(row.departmentName)) errors.push(`OCM department not in seeded catalog: ${row.departmentName}`);
+    if (!codes.has(row.jobFunctionCode)) errors.push(`OCM unknown job function: ${row.jobFunctionCode}`);
+    const key = `${row.departmentName}::${row.jobFunctionCode}`;
+    if (ocmKeys.has(key)) errors.push(`OCM duplicate persona ${key}`);
+    ocmKeys.add(key);
+  }
+  if (!ocm.some((row) => row.departmentName === "Reliability" && row.priority === 1)) {
+    errors.push("OCM missing priority-1 Reliability persona.");
+  }
+  if (!ocm.some((row) => row.departmentName === "Maintenance" && row.priority === 1)) {
+    errors.push("OCM missing priority-1 Maintenance persona.");
+  }
+  if (!ocm.some((row) => row.jobFunctionCode === "laboratory")) errors.push("OCM missing laboratory persona.");
+  if (!ocm.some((row) => row.jobFunctionCode === "procurement" && row.buyingRole === "PROCUREMENT")) {
+    errors.push("OCM missing procurement persona.");
   }
 
   return { ok: errors.length === 0, errors };

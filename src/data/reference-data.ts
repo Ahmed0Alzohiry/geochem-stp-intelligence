@@ -63,7 +63,7 @@ export const services: Service[] = [
   { id: "svc-petrochemical", name: "Petrochemical Services", serviceCode: "PCH", description: "Process chemistry, product quality, and petrochemical plant laboratory support.", active: true },
   { id: "svc-minerals", name: "Minerals & Agriculture", serviceCode: "MIN", description: "Ores, minerals, and agricultural material analysis.", active: true },
   { id: "svc-environmental", name: "Environmental Services", serviceCode: "ENV", description: "Soil, water, wastewater, and environmental compliance testing.", active: true },
-  { id: "svc-ocm", name: "Oil Condition Monitoring", serviceCode: "OCM", description: "Lubricant and oil condition monitoring programs.", active: true },
+  { id: "svc-ocm", name: "Oil Condition Monitoring", serviceCode: "OCM", description: "Used-oil analysis and condition monitoring for rotating equipment, lubricant health, contamination, wear detection, and predictive maintenance.", active: true },
   { id: "svc-metering", name: "Metering, Calibration & Topography", serviceCode: "MCT", description: "Metering, calibration, and topographic survey services.", active: true },
   { id: "svc-inspection", name: "Industrial Inspection", serviceCode: "INS", description: "Industrial inspection programs for plants, pipelines, and facilities.", active: true },
   { id: "svc-lab", name: "Laboratory / Testing Services", serviceCode: "LAB", description: "General laboratory testing, HSE, and QA/QC analytical services.", active: true },

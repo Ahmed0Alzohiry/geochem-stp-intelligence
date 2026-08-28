@@ -8,6 +8,7 @@ import {
   serviceReadiness,
   validateServiceRegistry,
 } from "./service-registry";
+import { personasForService } from "../contacts/service-persona-map";
 import type { ServiceFirstInput } from "./types";
 
 function base(serviceCode: ServiceFirstInput["serviceCode"]): ServiceFirstInput {
@@ -54,8 +55,12 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
   if (serviceReadiness("PET", 18) !== "CONFIGURED") failures.push("PET must be CONFIGURED when persisted count is 18");
   if (serviceReadiness("PET", 17) !== "NOT_CONFIGURED") failures.push("PET must not be CONFIGURED at count 17");
   if (serviceReadiness("PET", 100) !== "NOT_CONFIGURED") failures.push("PET must stay NOT_CONFIGURED at count 100");
+  if (serviceReadiness("OCM") !== "NOT_CONFIGURED") failures.push("OCM must stay NOT_CONFIGURED until 25 Wave-1 rows persist");
+  if (serviceReadiness("OCM", 25) !== "CONFIGURED") failures.push("OCM must be CONFIGURED when persisted count is 25");
+  if (serviceReadiness("OCM", 24) !== "NOT_CONFIGURED") failures.push("OCM must not be CONFIGURED at count 24");
+  if (personasForService("OCM").length !== 8) failures.push("OCM must keep 8 Wave-1 personas");
   for (const code of CANONICAL_SERVICE_CODES) {
-    if (code === "PCH" || code === "ENV" || code === "INS") continue;
+    if (code === "PCH" || code === "ENV" || code === "INS" || code === "PET" || code === "OCM") continue;
     if (serviceReadiness(code) !== "NOT_CONFIGURED") failures.push(`${code} must stay NOT_CONFIGURED until validated`);
     if (getCanonicalServiceDefinition(code).persistenceApproved) failures.push(`${code} persistence must not be approved`);
   }
@@ -69,8 +74,12 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
   const pch = scoreServiceAccount(base("PCH"));
   const pet = scoreServiceAccount(base("PET"));
   const min = scoreServiceAccount(base("MIN"));
+  const ocm = scoreServiceAccount(base("OCM"));
   if (pch.serviceCode !== "PCH" || pet.serviceCode !== "PET") failures.push("scores must keep their serviceCode");
   if (pch.eligibility !== "ELIGIBLE") failures.push("PCH petrochemicals should be eligible");
+  if (ocm.eligibility !== "ELIGIBLE") failures.push("OCM polymer/polyethylene plant should be eligible");
+  const ocmMed = scoreServiceAccount({ ...base("OCM"), verifiedCities: [], importedCity: "Jubail" });
+  if (ocmMed.tier === "Tier 1") failures.push("OCM must not force Tier 1 when geography is unknown");
   if (min.eligibility !== "OUT_OF_SCOPE") failures.push("MIN must not treat petrochemicals as eligible");
   if (pch.commercialScore === pet.commercialScore && pch.dimensions[0].rawScore === pet.dimensions[0].rawScore) {
     failures.push("PCH and PET industry fit should not be identical for this hypothetical");

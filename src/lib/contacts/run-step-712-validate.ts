@@ -128,16 +128,18 @@ async function main() {
   const personaChecks = {
     eightPchPersonas: PCH_CONTACT_PERSONAS.length === 8,
     mapValid: personas.ok,
-    otherServicesEmpty: ["PET", "MIN", "OCM", "MCT", "LAB"].every(
+    otherServicesEmpty: ["PET", "MIN", "MCT", "LAB"].every(
       (code) => personasForService(code).length === 0,
     ),
     envPersonas: personasForService("ENV").length === 8,
     insPersonas: personasForService("INS").length === 8,
+    ocmPersonas: personasForService("OCM").length === 8,
   };
   if (!personaChecks.eightPchPersonas) personaFails.push("expected 8 PCH personas");
   if (!personaChecks.envPersonas) personaFails.push("expected 8 ENV Wave-1 personas");
   if (!personaChecks.insPersonas) personaFails.push("expected 8 INS Wave-1 personas");
-  if (!personaChecks.otherServicesEmpty) personaFails.push("non-PCH/ENV/INS persona maps must be empty");
+  if (!personaChecks.ocmPersonas) personaFails.push("expected 8 OCM Wave-1 personas");
+  if (!personaChecks.otherServicesEmpty) personaFails.push("non-PCH/ENV/INS/OCM persona maps must be empty");
 
   const liveContacts = await supabase.from("contacts").select("id, company_id, full_name");
   const liveRelevance = await supabase

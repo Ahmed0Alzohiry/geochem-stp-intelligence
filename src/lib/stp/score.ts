@@ -1,4 +1,4 @@
-import { decideEligibility, industryEligible, subsectorSuggestsApplication } from "./eligibility";
+import { decideEligibility, hasOcmApplicationEvidence, industryEligible, subsectorSuggestsApplication } from "./eligibility";
 import { positioningFor, SERVICE_PLAYBOOK } from "./positioning";
 import type {
   CommercialTier,
@@ -39,7 +39,8 @@ const INDUSTRY_STRENGTH: Record<ServiceCode, Record<string, number>> = {
     "Oil & Gas": 92,
     Refining: 100,
     Petrochemicals: 90,
-    "Power & Utilities": 86,
+    "Power & Utilities": 88,
+    "Water & Wastewater": 82,
     "Mining & Minerals": 80,
     "Industrial Manufacturing": 78,
     Chemicals: 76,
@@ -114,6 +115,23 @@ function scoreIndustry(input: ServiceFirstInput): DimensionResult {
 
 function scoreSubsector(input: ServiceFirstInput): DimensionResult {
   const subsector = text(input.subsector);
+  if (input.serviceCode === "OCM") {
+    if (hasOcmApplicationEvidence(input.companyName, subsector)) {
+      return dim(
+        "subsectorFit",
+        "KNOWN",
+        96,
+        "Name/subsector indicates rotating equipment, lubrication, or plant-intensity OCM demand.",
+      );
+    }
+    if (!subsector) return dim("subsectorFit", "UNKNOWN", null, "Subsector is missing; not inferred from industry.");
+    return dim(
+      "subsectorFit",
+      "KNOWN",
+      48,
+      `Subsector "${subsector}" is in an OCM industry but is not a direct rotating-equipment / lube-oil application.`,
+    );
+  }
   if (!subsector) return dim("subsectorFit", "UNKNOWN", null, "Subsector is missing; not inferred from industry.");
   if (subsectorSuggestsApplication(input.serviceCode, subsector)) {
     return dim("subsectorFit", "KNOWN", 96, `Subsector "${subsector}" indicates a direct application for ${input.serviceCode}.`);

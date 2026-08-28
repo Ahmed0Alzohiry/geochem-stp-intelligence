@@ -26,12 +26,23 @@ const HEAVY_INDUSTRIAL = new Set([
   "Marine / Ports",
 ]);
 
+const OCM_INDUSTRIES = new Set([
+  "Oil & Gas",
+  "Refining",
+  "Petrochemicals",
+  "Chemicals",
+  "Power & Utilities",
+  "Water & Wastewater",
+  "Mining & Minerals",
+  "Industrial Manufacturing",
+]);
+
 export const SERVICE_ELIGIBLE_INDUSTRIES: Record<ServiceCode, Set<string>> = {
   PET: new Set([...CORE_OIL, "Marine / Ports"]),
   PCH: new Set([...CHEM, "Oil & Gas"]),
   MIN: MINING,
   ENV: ENV_INDUSTRIES,
-  OCM: new Set([...HEAVY_INDUSTRIAL, "Industrial Services"]),
+  OCM: OCM_INDUSTRIES,
   MCT: HEAVY_INDUSTRIAL,
   INS: HEAVY_INDUSTRIAL,
   LAB: new Set([...HEAVY_INDUSTRIAL, "Industrial Services", "Government / Public Sector"]),
@@ -42,7 +53,7 @@ const APPLICATION: Record<ServiceCode, RegExp> = {
   PCH: /petrochem|polymer|polyethylene|polypropylene|polyolefin|polycarbonate|ethylene|glycol|catalyst|methanol|elastomer|synthetic rubber|alkyl benzene|industrial fiber|amine|olefin|cracker|aromatic|mtbe|refin|crude|downstream|midstream|upstream|oilfield|gas process|hydrocarbon|feedstock|assay|process chemistry|product quality|reservoir|wellsite/i,
   MIN: /mine|mineral|ore|phosphate|bauxite|gold|copper|smelt|cement|industrial mineral/i,
   ENV: /wastewater|desal|environmental|effluent|soil|groundwater|produced water|hse|emission/i,
-  OCM: /lubricant|base oil|rotating|compressor|turbine|gearbox|oil condition|reliability|maintenance/i,
+  OCM: /lubricant|lube oil|used oil|oil condition|wear metal|rotating equipment|compressor|turbine|gearbox|hydraulic|base oil|refin|petrochem|polymer|polypropylene|polyethylene|olefin|gas plant|gas process|power plant|power generation|thermal power|independent power|\bipp\b|\biwpp\b|desal|cement|rolling mill|steel mill|kiln|integrated chemical/i,
   MCT: /metering|calibration|custody|tank farm|terminal|pipeline|topograph/i,
   INS: /inspection|integrity|ndt|pipeline|plant|turnaround|corrosion|coating/i,
   LAB: /laboratory|qa\/qc|quality|testing|analytical|hse|process chemistry/i,
@@ -56,6 +67,13 @@ export function industryEligible(serviceCode: ServiceCode, industry: string | nu
 export function subsectorSuggestsApplication(serviceCode: ServiceCode, subsector: string | null): boolean {
   if (!subsector) return false;
   return APPLICATION[serviceCode].test(subsector);
+}
+
+/** OCM application evidence on name + subsector. Industry membership alone is not enough. */
+export function hasOcmApplicationEvidence(companyName: string | null, subsector: string | null): boolean {
+  const blob = [companyName, subsector].filter(Boolean).join(" | ");
+  if (!blob) return false;
+  return APPLICATION.OCM.test(blob);
 }
 
 export function decideEligibility(input: ServiceFirstInput): {
@@ -75,6 +93,13 @@ export function decideEligibility(input: ServiceFirstInput): {
     return {
       decision: "INSUFFICIENT_TO_ELIGIBLE",
       reason: "Entity resolution is REVIEW; do not auto-score until the record is classified.",
+    };
+  }
+  if (input.serviceCode === "OCM" && !hasOcmApplicationEvidence(input.companyName, input.subsector)) {
+    return {
+      decision: "OUT_OF_SCOPE",
+      reason:
+        "OCM requires plant/fleet evidence of rotating equipment, lubrication systems, or equivalent — industry membership alone is not eligible.",
     };
   }
   return {
