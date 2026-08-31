@@ -54,7 +54,9 @@ export function runFast2EngineSelfTest(): { ok: boolean; failures: string[] } {
   if (serviceReadiness("PET") !== "NOT_CONFIGURED") failures.push("PET must stay NOT_CONFIGURED until 18 Wave-1 rows persist");
   if (serviceReadiness("PET", 18) !== "CONFIGURED") failures.push("PET must be CONFIGURED when persisted count is 18");
   if (serviceReadiness("PET", 17) !== "NOT_CONFIGURED") failures.push("PET must not be CONFIGURED at count 17");
-  if (serviceReadiness("PET", 100) !== "NOT_CONFIGURED") failures.push("PET must stay NOT_CONFIGURED at count 100");
+  if (serviceReadiness("PET", 100) !== "CONFIGURED") {
+    failures.push("PET must stay CONFIGURED after Wave-1 when additional current rows are promoted");
+  }
   if (serviceReadiness("OCM") !== "NOT_CONFIGURED") failures.push("OCM must stay NOT_CONFIGURED until 25 Wave-1 rows persist");
   if (serviceReadiness("OCM", 25) !== "CONFIGURED") failures.push("OCM must be CONFIGURED when persisted count is 25");
   if (serviceReadiness("OCM", 24) !== "NOT_CONFIGURED") failures.push("OCM must not be CONFIGURED at count 24");

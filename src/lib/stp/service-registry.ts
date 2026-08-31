@@ -80,25 +80,22 @@ export function getCanonicalServiceDefinition(code: ServiceCode): CanonicalServi
   };
 }
 
+/** Wave-1 floor. CONFIGURED once this many current rows exist; extra promoted discovery rows stay CONFIGURED. */
+export function wave1ConfiguredFloor(code: ServiceCode): number | null {
+  if (code === "ENV") return ENV_WAVE1_EXPECTED_COUNT;
+  if (code === "INS") return INS_WAVE1_EXPECTED_COUNT;
+  if (code === "PET") return PET_WAVE1_EXPECTED_COUNT;
+  if (code === "OCM") return OCM_WAVE1_EXPECTED_COUNT;
+  if (code === "LAB") return LAB_WAVE1_EXPECTED_COUNT;
+  if (code === "MCT") return MCT_WAVE1_EXPECTED_COUNT;
+  return null;
+}
+
 export function serviceReadiness(code: ServiceCode, persistedCurrentCount = 0): ServiceReadiness {
   if (code === "PCH") return "CONFIGURED";
-  if (code === "ENV") {
-    return persistedCurrentCount === ENV_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
-  }
-  if (code === "INS") {
-    return persistedCurrentCount === INS_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
-  }
-  if (code === "PET") {
-    return persistedCurrentCount === PET_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
-  }
-  if (code === "OCM") {
-    return persistedCurrentCount === OCM_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
-  }
-  if (code === "LAB") {
-    return persistedCurrentCount === LAB_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
-  }
-  if (code === "MCT") {
-    return persistedCurrentCount === MCT_WAVE1_EXPECTED_COUNT ? "CONFIGURED" : "NOT_CONFIGURED";
+  const floor = wave1ConfiguredFloor(code);
+  if (floor != null) {
+    return persistedCurrentCount >= floor ? "CONFIGURED" : "NOT_CONFIGURED";
   }
   return "NOT_CONFIGURED";
 }
@@ -150,12 +147,7 @@ export function registerLiveServices(
         readiness: serviceReadiness(code, persisted),
         persistenceApproved:
           def.persistenceApproved ||
-          (code === "ENV" && persisted === ENV_WAVE1_EXPECTED_COUNT) ||
-          (code === "INS" && persisted === INS_WAVE1_EXPECTED_COUNT) ||
-          (code === "PET" && persisted === PET_WAVE1_EXPECTED_COUNT) ||
-          (code === "OCM" && persisted === OCM_WAVE1_EXPECTED_COUNT) ||
-          (code === "LAB" && persisted === LAB_WAVE1_EXPECTED_COUNT) ||
-          (code === "MCT" && persisted === MCT_WAVE1_EXPECTED_COUNT),
+          (wave1ConfiguredFloor(code) != null && persisted >= (wave1ConfiguredFloor(code) as number)),
         personasApproved: def.personasApproved,
         scoringModelPresent: def.scoringModelPresent,
         personaCount: personasForService(code).length,

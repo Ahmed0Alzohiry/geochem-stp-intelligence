@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ScoringTable } from "@/components/targeting/ScoringTable";
+import { FullDatabaseTargetingPanel } from "@/components/targeting/FullDatabaseTargetingPanel";
 import { ServiceSelector } from "@/components/services/ServiceSelector";
 import { PageHeader } from "@/components/ui/FormControls";
 import { Card, CardBody } from "@/components/ui/Card";
 import { MasterDataError } from "@/components/ui/MasterDataStatus";
 import { loadMasterDataError } from "@/lib/supabase/errors";
 import { getStpCurrentForService } from "@/lib/supabase/stp-current";
+import { loadServiceCoverage } from "@/lib/stp/run-full-database-targeting";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,12 @@ export default async function TargetingPage({
     const result = await getStpCurrentForService(params);
     const selectedCode = result.service.service_code ?? "PCH";
     const notConfigured = result.readiness !== "CONFIGURED";
+    let coverage: Awaited<ReturnType<typeof loadServiceCoverage>> | null = null;
+    try {
+      coverage = await loadServiceCoverage();
+    } catch {
+      coverage = null;
+    }
 
     return (
       <div>
@@ -64,6 +72,13 @@ export default async function TargetingPage({
           </Card>
         ) : null}
         <ScoringTable result={result} />
+        <div className="mt-6">
+          <FullDatabaseTargetingPanel
+            serviceCode={selectedCode}
+            persistedCount={result.total}
+            coverage={coverage}
+          />
+        </div>
       </div>
     );
   } catch (error) {
