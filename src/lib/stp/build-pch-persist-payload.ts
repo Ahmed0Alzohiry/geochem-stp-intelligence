@@ -4,6 +4,7 @@
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "../supabase/client";
 import { collapseByAccountGroup, type ScoredAccount } from "./account-group";
 import { scoreServiceAccount } from "./score";
@@ -37,6 +38,7 @@ type LocationRow = {
 };
 
 export function loadEnvLocal() {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
   const envPath = resolve(process.cwd(), ".env.local");
   const text = readFileSync(envPath, "utf8");
   for (const line of text.split(/\r?\n/)) {
@@ -56,8 +58,12 @@ function text(value: string | null | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-async function fetchAll<T>(table: string, fields: string, idCol: string): Promise<T[]> {
-  const supabase = createSupabaseBrowserClient();
+async function fetchAll<T>(
+  table: string,
+  fields: string,
+  idCol: string,
+  supabase: SupabaseClient,
+): Promise<T[]> {
   const { count, error: countError } = await supabase.from(table).select(idCol, { count: "exact", head: true });
   if (countError) throw new Error(`${table}: ${countError.message}`);
   const total = count ?? 0;
@@ -71,17 +77,20 @@ async function fetchAll<T>(table: string, fields: string, idCol: string): Promis
   return rows;
 }
 
-export async function scoreLiveServiceUniverse(serviceCode: ServiceCode): Promise<{
+export async function scoreLiveServiceUniverse(
+  serviceCode: ServiceCode,
+  supabase: SupabaseClient = createSupabaseBrowserClient(),
+): Promise<{
   service: { id: string; name: string; service_code: string };
   scored: ScoredAccount[];
   companies: CompanyRow[];
 }> {
   loadEnvLocal();
-  const supabase = createSupabaseBrowserClient();
   const services = await fetchAll<{ id: string; name: string; service_code: string; active: boolean }>(
     "services",
     "id, name, service_code, active",
     "id",
+    supabase,
   );
   const service = services.find((row) => row.service_code === serviceCode && row.active);
   if (!service) throw new Error(`Active ${serviceCode} service not found in public.services`);
@@ -90,13 +99,14 @@ export async function scoreLiveServiceUniverse(serviceCode: ServiceCode): Promis
   const companySelect = probe.error
     ? "id, company_name, industry, subsector, customer_type, parent_company_name, account_status, city"
     : "id, company_name, industry, subsector, customer_type, parent_company_name, is_existing_geochem_customer, account_status, city";
-  const companies = await fetchAll<CompanyRow>("companies", companySelect, "id");
+  const companies = await fetchAll<CompanyRow>("companies", companySelect, "id", supabase);
   const entities = await fetchAll<EntityRow>(
     "company_entity_resolution",
     "company_id, entity_type, account_group_key",
     "company_id",
+    supabase,
   );
-  const locations = await fetchAll<LocationRow>("company_locations", "company_id, city, confidence", "id");
+  const locations = await fetchAll<LocationRow>("company_locations", "company_id, city, confidence", "id", supabase);
   const er = new Map(entities.map((row) => [row.company_id, row]));
   const locByCompany = new Map<string, string[]>();
   for (const row of locations) {
