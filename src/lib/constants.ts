@@ -1,6 +1,6 @@
 import type { CrmStage, ScoringWeight } from "@/types";
 
-export const APP_NAME = "GEOCHEM STP Intelligence";
+export const APP_NAME = "STP Intelligence";
 export const COMPANY_NAME = "GEOCHEM ARABIA LIMITED";
 
 export const NAV_ITEMS = [

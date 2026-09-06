@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import { AppShell } from "@/components/layout/AppShell";
+import { APP_NAME } from "@/lib/constants";
 import "./globals.css";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -10,7 +11,7 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GEOCHEM STP Intelligence",
+  title: APP_NAME,
   description:
     "Segmentation, targeting, and positioning intelligence platform for GEOCHEM ARABIA LIMITED.",
 };
