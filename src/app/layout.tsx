@@ -12,8 +12,7 @@ const ibmPlexSans = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description:
-    "Segmentation, targeting, and positioning intelligence platform for GEOCHEM ARABIA LIMITED.",
+  description: "Segmentation, targeting, and positioning intelligence platform.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

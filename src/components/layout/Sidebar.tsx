@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { navItemIsActive, withServiceQuery } from "@/lib/navigation";
-import { APP_NAME, COMPANY_NAME, NAV_ITEMS } from "@/lib/constants";
+import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const ICONS = {
@@ -60,11 +60,7 @@ export function Sidebar() {
       >
         <div className="flex items-start justify-between border-b border-white/10 px-5 py-5">
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-brass-400 uppercase">
-              GEOCHEM ARABIA
-            </p>
-            <p className="mt-1 text-sm font-semibold text-white">{APP_NAME}</p>
-            <p className="mt-1 text-xs text-navy-100/70">{COMPANY_NAME}</p>
+            <p className="text-sm font-semibold text-white">{APP_NAME}</p>
           </div>
           <button
             type="button"
